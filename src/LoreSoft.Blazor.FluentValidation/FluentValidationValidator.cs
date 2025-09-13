@@ -44,6 +44,11 @@ namespace LoreSoft.Blazor.FluentValidation;
 /// <seealso cref="IValidator"/>
 public class FluentValidationValidator : ComponentBase, IDisposable
 {
+    /// <summary>
+    /// The key used to store the pending validation task in the EditContext properties.
+    /// </summary>
+    public const string PendingTask = "__FluentValidation_Task";
+
     private static readonly ConcurrentDictionary<Type, Func<object, PropertyChain?, IValidatorSelector, IValidationContext>> _contextFactoryCache = new();
     private static readonly ConcurrentDictionary<Type, Type> _validatorTypeCache = new();
 
@@ -249,9 +254,22 @@ public class FluentValidationValidator : ComponentBase, IDisposable
         if (context == null)
             return;
 
-        var validationResults = AsyncMode
-            ? await _currentValidator.ValidateAsync(context).ConfigureAwait(false)
-            : _currentValidator.Validate(context);
+        ValidationResult? validationResults;
+
+        if (AsyncMode)
+        {
+            // store pending task in EditContext properties so it can be awaited if needed
+            // used in EditContextExtensions.ValidateAsync() to prevent premature form submission
+            var task = _currentValidator.ValidateAsync(context);
+            _currentContext.Properties[PendingTask] = task;
+
+            // continue validation so message store is updated when task completes
+            validationResults = await task.ConfigureAwait(false);
+        }
+        else
+        {
+            validationResults = _currentValidator.Validate(context);
+        }
 
         // update messages for all fields
         ApplyValidationResults(validationResults);

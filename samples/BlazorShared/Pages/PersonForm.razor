@@ -12,7 +12,7 @@
 <h3>Person Form</h3>
 
 <EditForm Model="@person"
-          OnValidSubmit="@HandleValidSubmit">
+          OnSubmit="@HandleSubmit">
 
     <FluentValidationValidator AsyncMode="true" AllRules="true" />
 
@@ -205,12 +205,12 @@
 
     private bool isSubmitted = false;
 
-    private async Task HandleValidSubmit()
+    private async Task HandleSubmit(EditContext editContext)
     {
-        // Simulate async operation
-        await Task.Delay(500);
+		// support async validation
+		var valid = await editContext.ValidateAsync();
 
-        isSubmitted = true;
+		isSubmitted = valid;
     }
 
     private void ResetForm()

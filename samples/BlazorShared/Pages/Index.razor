@@ -234,10 +234,15 @@
                         <p class="small text-muted mb-2">Register your validator in DI container:</p>
                         <code class="small">builder.Services.AddSingleton&lt;IValidator&lt;MyModel&gt;, MyModelValidator&gt;();</code>
                     </div>
-                    <div>
+                    <div class="mb-3">
                         <h6 class="fw-bold">EditContext parameter missing</h6>
                         <p class="small text-muted mb-2">Place component inside EditForm:</p>
                         <code class="small">&lt;EditForm Model="@@model"&gt;&lt;FluentValidationValidator /&gt;&lt;/EditForm&gt;</code>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold">Invalid form submits with AsyncMode</h6>
+                        <p class="small text-muted mb-2">Use OnSubmit instead of OnValidSubmit with async validation:</p>
+                        <code class="small">&lt;EditForm OnSubmit="@@HandleSubmit"&gt;&lt;FluentValidationValidator AsyncMode="true" /&gt;&lt;/EditForm&gt;</code>
                     </div>
                 </div>
             </div>
@@ -370,16 +375,54 @@ builder.Services.AddSingleton<IValidator<Person>, PersonValidator>();";
     <button type=""submit"" class=""btn btn-primary"">Submit</button>
 </EditForm>";
 
-    private string asyncValidationExample = @"<!-- Enable async mode -->
-<FluentValidationValidator AsyncMode=""true"" />
+    private string asyncValidationExample = @"<!-- Use OnSubmit instead of OnValidSubmit for async validation -->
+<EditForm Model=""@person"" OnSubmit=""@HandleSubmit"">
+    <FluentValidationValidator AsyncMode=""true"" />
+    
+    <div class=""mb-3"">
+        <InputText @bind-Value=""person.EmailAddress"" class=""form-control"" />
+        <ValidationMessage For=""@(() => person.EmailAddress)"" />
+    </div>
+    
+    <button type=""submit"" class=""btn btn-primary"" disabled=""@isSubmitting"">
+        @(isSubmitting ? ""Validating..."" : ""Submit"")
+    </button>
+</EditForm>
 
-// In your validator
+@code {
+    private bool isSubmitting = false;
+
+    private async Task HandleSubmit(EditContext editContext)
+    {
+        isSubmitting = true;
+        StateHasChanged();
+        
+        try
+        {
+            // Use ValidateAsync to ensure all async validation completes
+            var isValid = await editContext.ValidateAsync();
+            
+            if (isValid)
+            {
+                // Form is valid, proceed with submission
+                await ProcessValidForm();
+            }
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+}
+
+// In your validator - async validation rule
 RuleFor(p => p.EmailAddress)
     .MustAsync(async (email, cancellation) =>
     {
-        // Check if email exists in database
-        return await IsEmailUniqueAsync(email);
-    }).WithMessage(""Email address is already taken"");";
+        await Task.Delay(500, cancellation); // Simulate API call
+        return !email?.Equals(""admin@example.com"") ?? true;
+    }).WithMessage(""Email address is not available"");";
 
     private string ruleSetsExample = @"// In your validator
 RuleSet(""Create"", () => {
