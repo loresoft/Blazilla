@@ -1,0 +1,21 @@
+<footer class="border-top footer text-muted d-print-none">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md text-center">
+                <span class="mx-1">
+                    <i class="bi bi-gear-fill"></i>
+                    @RendererInfo.Name
+                </span>
+            </div>
+            <div class="col-md-6 text-center">
+                Copyright © @DateTime.Now.Year LoreSoft. All Rights Reserved.
+            </div>
+            <div class="col-md text-center" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                <span title="@ThisAssembly.InformationalVersion">
+                    <i class="bi bi-git"></i>
+                    Version @ThisAssembly.FileVersion
+                </span>
+            </div>
+        </div>
+    </div>
+</footer>

@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/Build/">
+    <File Path=".github/workflows/dotnet.yml" />
+    <File Path="Directory.Packages.props" />
+    <File Path="README.md" />
+    <File Path="src/Directory.Build.props" />
+  </Folder>
+  <Folder Name="/Samples/">
+    <Project Path="samples/BlazorServer/BlazorServer.csproj" />
+    <Project Path="samples/BlazorShared/BlazorShared.csproj" />
+    <Project Path="samples/BlazorWebAssembly/BlazorWebAssembly.csproj" />
+  </Folder>
+  <Project Path="src/LoreSoft.Blazor.FluentValidation/LoreSoft.Blazor.FluentValidation.csproj" Id="8cdb26ef-7c58-4f45-bbdf-73664ac6812d" />
+  <Project Path="test/LoreSoft.Blazor.FluentValidation.Tests/LoreSoft.Blazor.FluentValidation.Tests.csproj" Id="2bcce74d-4173-4493-90c7-6c9ebdaf714d" />
+</Solution>

@@ -1,0 +1,406 @@
+@page "/"
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex align-items-center mb-4">
+                <h1 class="display-4 me-3">
+                    <i class="bi bi-check-circle-fill text-success me-2"></i>
+                    LoreSoft.Blazor.FluentValidation
+                </h1>
+            </div>
+
+            <p class="lead text-muted mb-4">
+                A powerful library for seamless integration between FluentValidation and Blazor's EditForm component.
+                Perfect for both Blazor Server and Blazor WebAssembly applications.
+            </p>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <h4 class="card-title text-primary">
+                        <i class="bi bi-rocket-takeoff me-2"></i>Quick Start
+                    </h4>
+                    <p class="card-text">Get up and running in minutes with our simple installation and setup process.</p>
+                    <div class="bg-light p-3 rounded">
+                        <code class="text-dark">dotnet add package LoreSoft.Blazor.FluentValidation</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <h4 class="card-title text-success">
+                        <i class="bi bi-gear-fill me-2"></i>Live Example
+                    </h4>
+                    <p class="card-text">See the library in action with our interactive address form example.</p>
+                    <a href="/address" class="btn btn-success">
+                        <i class="bi bi-play-fill me-2"></i>Try Demo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="bi bi-star-fill text-warning me-2"></i>Key Features
+            </h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card p-4 text-center">
+                        <i class="bi bi-lightning-charge-fill display-4 text-primary mb-3"></i>
+                        <h5>Real-time Validation</h5>
+                        <p class="text-muted">Validate fields as users type or change values for immediate feedback.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card p-4 text-center">
+                        <i class="bi bi-layers-fill display-4 text-success mb-3"></i>
+                        <h5>Nested Objects</h5>
+                        <p class="text-muted">Support for complex object hierarchies and nested property validation.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card p-4 text-center">
+                        <i class="bi bi-clock-fill display-4 text-info mb-3"></i>
+                        <h5>Async Validation</h5>
+                        <p class="text-muted">Built-in support for asynchronous validation rules and background checks.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card p-4 text-center">
+                        <i class="bi bi-tags-fill display-4 text-warning mb-3"></i>
+                        <h5>Rule Sets</h5>
+                        <p class="text-muted">Execute specific groups of validation rules for different scenarios.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card p-4 text-center">
+                        <i class="bi bi-box-arrow-in-down-left display-4 text-danger mb-3"></i>
+                        <h5>Dependency Injection</h5>
+                        <p class="text-muted">Automatic validator resolution from the DI container.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card p-4 text-center">
+                        <i class="bi bi-speedometer2 display-4 text-purple mb-3"></i>
+                        <h5>High Performance</h5>
+                        <p class="text-muted">Optimized for fast validation.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="bi bi-code-slash me-2"></i>Basic Usage Example
+            </h2>
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">1. Create Your Model & Validator</h5>
+                    <pre class="bg-dark text-light p-3 rounded"><code>@codeExample1</code></pre>
+
+                    <h5 class="card-title mt-4">2. Register in Program.cs</h5>
+                    <pre class="bg-dark text-light p-3 rounded"><code>@codeExample2</code></pre>
+
+                    <h5 class="card-title mt-4">3. Use in Your Blazor Component</h5>
+                    <pre class="bg-dark text-light p-3 rounded"><code>@codeExample3</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="bi bi-tools me-2"></i>Advanced Features
+            </h2>
+
+            <div class="accordion" id="advancedFeaturesAccordion">
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="asyncValidationHeading">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#asyncValidationCollapse">
+                            <i class="bi bi-clock-fill me-2"></i>Asynchronous Validation
+                        </button>
+                    </h2>
+                    <div id="asyncValidationCollapse" class="accordion-collapse collapse" data-bs-parent="#advancedFeaturesAccordion">
+                        <div class="accordion-body">
+                            <p>Enable async validation for database checks, API calls, and other asynchronous operations:</p>
+                            <pre class="bg-dark text-light p-3 rounded"><code>@asyncValidationExample</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="ruleSetsHeading">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ruleSetsCollapse">
+                            <i class="bi bi-tags-fill me-2"></i>Rule Sets
+                        </button>
+                    </h2>
+                    <div id="ruleSetsCollapse" class="accordion-collapse collapse" data-bs-parent="#advancedFeaturesAccordion">
+                        <div class="accordion-body">
+                            <p>Execute specific groups of validation rules for different scenarios:</p>
+                            <pre class="bg-dark text-light p-3 rounded"><code>@ruleSetsExample</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <h2 class="accordion-header" id="nestedObjectsHeading">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nestedObjectsCollapse">
+                            <i class="bi bi-layers-fill me-2"></i>Nested Object Validation
+                        </button>
+                    </h2>
+                    <div id="nestedObjectsCollapse" class="accordion-collapse collapse" data-bs-parent="#advancedFeaturesAccordion">
+                        <div class="accordion-body">
+                            <p>Validate complex objects with nested properties:</p>
+                            <pre class="bg-dark text-light p-3 rounded"><code>@nestedObjectsExample</code></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="bi bi-sliders me-2"></i>Component Parameters
+            </h2>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Default</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>Validator</code></td>
+                            <td><code>IValidator?</code></td>
+                            <td><code>null</code></td>
+                            <td>The FluentValidation validator instance to use. If not provided, the component will attempt to resolve a validator from the dependency injection container based on the EditForm's model type.</td>
+                        </tr>
+                        <tr>
+                            <td><code>RuleSets</code></td>
+                            <td><code>IEnumerable&lt;string&gt;?</code></td>
+                            <td><code>null</code></td>
+                            <td>Collection of rule set names to execute. Only validation rules within the specified rule sets will be executed. Use this to run targeted validation scenarios (e.g., "Create", "Update", "Profile").</td>
+                        </tr>
+                        <tr>
+                            <td><code>AllRules</code></td>
+                            <td><code>bool</code></td>
+                            <td><code>false</code></td>
+                            <td>When true, executes all validation rules including those defined within rule sets. When false (default), only executes rules not in any rule set plus any specified in the RuleSets parameter.</td>
+                        </tr>
+                        <tr>
+                            <td><code>AsyncMode</code></td>
+                            <td><code>bool</code></td>
+                            <td><code>false</code></td>
+                            <td>Enables asynchronous validation mode for validators containing async rules (MustAsync, etc.). When enabled, validation will be performed asynchronously and may show a brief delay for async operations like database checks.</td>
+                        </tr>
+                        <tr>
+                            <td><code>Selector</code></td>
+                            <td><code>IValidatorSelector?</code></td>
+                            <td><code>null</code></td>
+                            <td>Custom validator selector implementation for advanced scenarios requiring fine-grained control over which validation rules execute. Allows conditional rule execution based on custom logic, property paths, or validation context.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-md-6">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Common Issues
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <h6 class="fw-bold">No validator found error</h6>
+                        <p class="small text-muted mb-2">Register your validator in DI container:</p>
+                        <code class="small">builder.Services.AddSingleton&lt;IValidator&lt;MyModel&gt;, MyModelValidator&gt;();</code>
+                    </div>
+                    <div>
+                        <h6 class="fw-bold">EditContext parameter missing</h6>
+                        <p class="small text-muted mb-2">Place component inside EditForm:</p>
+                        <code class="small">&lt;EditForm Model="@@model"&gt;&lt;FluentValidationValidator /&gt;&lt;/EditForm&gt;</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-lightbulb-fill me-2"></i>Best Practices
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            <strong>Register validators in dependency injection</strong> - Always register your validators as singleton services in the DI container. This enables automatic validator resolution and promotes testability. Use <code>AddSingleton&lt;IValidator&lt;TModel&gt;, TValidator&gt;()</code> in your Program.cs file since validators are stateless and can be safely reused.
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            <strong>Use rule sets for different validation scenarios</strong> - Organize validation rules into logical groups using RuleSet() to support different workflows like "Create", "Update", or "Admin". This allows you to validate only relevant rules for specific user actions or UI states.
+                        </li>
+                        <li class="mb-2">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            <strong>Enable async mode only when needed</strong> - Use AsyncMode="true" only for validators containing MustAsync rules. Async validation introduces latency and should be reserved for operations like database uniqueness checks, API calls, or external service validations.
+                        </li>
+                        <li class="mb-0">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            <strong>Leverage nested validation for complex models</strong> - Use SetValidator() to validate nested objects and collections. This maintains clean separation of concerns and allows reusable validators for shared objects like Address, Contact, or Profile information across multiple forms.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12 text-center">
+            <div class="card border-0 bg-light">
+                <div class="card-body">
+                    <h3 class="text-primary mb-3">
+                        <i class="bi bi-heart-fill me-2"></i>Ready to Get Started?
+                    </h3>
+                    <p class="lead mb-4">Try our interactive demo to see LoreSoft.Blazor.FluentValidation in action!</p>
+                    <a href="/address" class="btn btn-primary btn-lg me-3">
+                        <i class="bi bi-play-fill me-2"></i>Live Demo
+                    </a>
+                    <a href="https://github.com/loresoft/LoreSoft.Blazor.FluentValidation" class="btn btn-outline-primary btn-lg" target="_blank">
+                        <i class="bi bi-github me-2"></i>View on GitHub
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .feature-card {
+        border: 1px solid #e9ecef;
+        border-radius: 0.5rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+        height: 100%;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+    }
+
+    .text-purple {
+        color: #6f42c1 !important;
+    }
+
+    .bg-dark code {
+        background: transparent !important;
+    }
+
+    .accordion-button:not(.collapsed) {
+        background-color: rgba(13, 110, 253, 0.1);
+        border-color: rgba(13, 110, 253, 0.25);
+    }
+</style>
+
+@code {
+    private string codeExample1 = @"public class Person
+{
+    public string? FirstName { get; set; }
+    public string? LastName { get; set; }
+    public int Age { get; set; }
+    public string? EmailAddress { get; set; }
+}
+
+public class PersonValidator : AbstractValidator<Person>
+{
+    public PersonValidator()
+    {
+        RuleFor(p => p.FirstName)
+            .NotEmpty().WithMessage(""First name is required"")
+            .MaximumLength(50);
+
+        RuleFor(p => p.EmailAddress)
+            .NotEmpty().WithMessage(""Email is required"")
+            .EmailAddress().WithMessage(""Please provide a valid email"");
+    }
+}@";
+
+    private string codeExample2 = @"// Register FluentValidation validators
+builder.Services.AddSingleton<IValidator<Person>, PersonValidator>();";
+
+    private string codeExample3 = @"<EditForm Model=""@person"" OnValidSubmit=""@HandleValidSubmit"">
+    <FluentValidationValidator />
+
+    <div class=""mb-3"">
+        <InputText @bind-Value=""person.FirstName"" class=""form-control"" />
+        <ValidationMessage For=""@(() => person.FirstName)"" />
+    </div>
+
+    <button type=""submit"" class=""btn btn-primary"">Submit</button>
+</EditForm>";
+
+    private string asyncValidationExample = @"<!-- Enable async mode -->
+<FluentValidationValidator AsyncMode=""true"" />
+
+// In your validator
+RuleFor(p => p.EmailAddress)
+    .MustAsync(async (email, cancellation) =>
+    {
+        // Check if email exists in database
+        return await IsEmailUniqueAsync(email);
+    }).WithMessage(""Email address is already taken"");";
+
+    private string ruleSetsExample = @"// In your validator
+RuleSet(""Create"", () => {
+    RuleFor(p => p.EmailAddress).NotEmpty().EmailAddress();
+});
+
+RuleSet(""Update"", () => {
+    RuleFor(p => p.LastName).NotEmpty();
+});
+
+<!-- Execute only ""Create"" rule set -->
+<FluentValidationValidator RuleSets=""@(new[] { ""Create"" })"" />
+
+<!-- Execute all rules including rule sets -->
+<FluentValidationValidator AllRules=""true"" />";
+
+    private string nestedObjectsExample = @"public class Person
+{
+    public string? FirstName { get; set; }
+    public Address? Address { get; set; }
+}
+
+public class PersonValidator : AbstractValidator<Person>
+{
+    public PersonValidator()
+    {
+        RuleFor(p => p.FirstName).NotEmpty();
+        
+        // Validate nested Address object
+        RuleFor(p => p.Address!)
+            .SetValidator(new AddressValidator())
+            .When(p => p.Address is not null);
+    }
+}";
+}

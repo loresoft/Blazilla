@@ -1,0 +1,221 @@
+@page "/person"
+
+<h3>Overview</h3>
+<p>
+    This example demonstrates advanced FluentValidation features in Blazor, specifically showcasing
+    <code>AsyncMode="true"</code> and <code>AllRules="true"</code> on the FluentValidationValidator component.
+    The <strong>AsyncMode</strong> enables asynchronous validation rules (like email uniqueness checks),
+    while <strong>AllRules</strong> ensures all validation rules are executed and displayed,
+    not just the first failing rule per property.
+</p>
+
+<h3>Person Form</h3>
+
+<EditForm Model="@person"
+          OnValidSubmit="@HandleValidSubmit">
+
+    <FluentValidationValidator AsyncMode="true" AllRules="true" />
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="firstName"
+                       class="form-label">First Name *</label>
+                <InputText id="firstName"
+                           class="form-control"
+                           @bind-Value="person.FirstName"
+                           placeholder="John"
+                           maxlength="50" />
+                <ValidationMessage For="@(() => person.FirstName)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="lastName"
+                       class="form-label">Last Name *</label>
+                <InputText id="lastName"
+                           class="form-control"
+                           @bind-Value="person.LastName"
+                           placeholder="Doe"
+                           maxlength="50" />
+                <ValidationMessage For="@(() => person.LastName)" />
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="age"
+                       class="form-label">Age *</label>
+                <InputNumber id="age"
+                             class="form-control"
+                             @bind-Value="person.Age"
+                             placeholder="25"
+                             min="0"
+                             max="149" />
+                <ValidationMessage For="@(() => person.Age)" />
+                <div class="form-text">Age must be between 0 and 149. Note: Age 69 will show a warning.</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="email"
+                       class="form-label">Email Address *</label>
+                <InputText id="email"
+                           class="form-control"
+                           @bind-Value="person.EmailAddress"
+                           placeholder="john.doe@example.com"
+                           type="email" />
+                <ValidationMessage For="@(() => person.EmailAddress)" />
+                <div class="form-text">Note: 'mail@my.com' is not allowed (uniqueness validation).</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <h5>Address Information</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="addressLine1"
+                               class="form-label">Address Line 1 *</label>
+                        <InputText id="addressLine1"
+                                   class="form-control"
+                                   @bind-Value="person.Address!.AddressLine1"
+                                   placeholder="123 Main Street" />
+                        <ValidationMessage For="@(() => person.Address!.AddressLine1)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="addressLine2"
+                               class="form-label">Address Line 2</label>
+                        <InputText id="addressLine2"
+                                   class="form-control"
+                                   @bind-Value="person.Address!.AddressLine2"
+                                   placeholder="Apartment, suite, etc. (optional)" />
+                        <ValidationMessage For="@(() => person.Address!.AddressLine2)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="addressLine3"
+                               class="form-label">Address Line 3</label>
+                        <InputText id="addressLine3"
+                                   class="form-control"
+                                   @bind-Value="person.Address!.AddressLine3"
+                                   placeholder="Additional address information (optional)" />
+                        <ValidationMessage For="@(() => person.Address!.AddressLine3)" />
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="city"
+                               class="form-label">City *</label>
+                        <InputText id="city"
+                                   class="form-control"
+                                   @bind-Value="person.Address!.City"
+                                   placeholder="New York" />
+                        <ValidationMessage For="@(() => person.Address!.City)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="stateProvince"
+                               class="form-label">State/Province *</label>
+                        <InputText id="stateProvince"
+                                   class="form-control"
+                                   @bind-Value="person.Address!.StateProvince"
+                                   placeholder="NY" />
+                        <ValidationMessage For="@(() => person.Address!.StateProvince)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="postalCode"
+                               class="form-label">Postal Code *</label>
+                        <InputText id="postalCode"
+                                   class="form-control"
+                                   @bind-Value="person.Address!.PostalCode"
+                                   placeholder="10001" />
+                        <ValidationMessage For="@(() => person.Address!.PostalCode)" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <button type="submit"
+                    class="btn btn-primary me-2">Submit</button>
+            <button type="button"
+                    class="btn btn-secondary"
+                    @onclick="ResetForm">Reset</button>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <ValidationSummary />
+        </div>
+    </div>
+
+    @if (isSubmitted)
+    {
+        <div id="submission-success" class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-success"
+                     role="alert">
+                    <h4 class="alert-heading">Person Submitted Successfully!</h4>
+                    <p>The person information has been validated and submitted. Here's what you entered:</p>
+                    <hr>
+                    <p class="mb-0">
+                        <strong>Name:</strong> @person.FirstName @person.LastName<br />
+                        <strong>Age:</strong> @person.Age<br />
+                        <strong>Email:</strong> @person.EmailAddress<br />
+
+                        @if (person.Address != null)
+                        {
+                            <strong>Address:</strong>
+                            <br />
+
+                            @person.Address.AddressLine1
+                            <br />
+
+                            @if (!string.IsNullOrWhiteSpace(person.Address.AddressLine2))
+                            {
+                                @person.Address.AddressLine2
+                                <br />
+                            }
+                            @if (!string.IsNullOrWhiteSpace(person.Address.AddressLine3))
+                            {
+                                @person.Address.AddressLine3
+                                <br />
+                            }
+                            <text>
+                                @person.Address.City,
+                                @person.Address.StateProvince @person.Address.PostalCode
+                            </text>
+                        }
+                    </p>
+                </div>
+            </div>
+        </div>
+    }
+</EditForm>
+
+@code {
+    private Person person = new() { Address = new() };
+
+    private bool isSubmitted = false;
+
+    private async Task HandleValidSubmit()
+    {
+        // Simulate async operation
+        await Task.Delay(500);
+
+        isSubmitted = true;
+    }
+
+    private void ResetForm()
+    {
+        person = new Person { Address = new() };
+        isSubmitted = false;
+    }
+}

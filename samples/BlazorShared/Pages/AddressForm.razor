@@ -1,0 +1,150 @@
+@page "/address"
+
+<h3>Overview</h3>
+<p>
+    This is a basic example demonstrating how to integrate FluentValidation with Blazor forms.
+    The example shows a simple address form with standard input fields and validation messages.
+    This basic implementation covers the fundamental concepts of using FluentValidation in Blazor applications,
+    including form binding, validation triggers, and displaying validation results to users.
+</p>
+
+<h3>Address Form</h3>
+
+<EditForm Model="@address"
+          OnValidSubmit="@HandleValidSubmit">
+
+    <FluentValidationValidator />
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="addressLine1"
+                       class="form-label">Address Line 1 *</label>
+                <InputText id="addressLine1"
+                           class="form-control"
+                           @bind-Value="address.AddressLine1"
+                           placeholder="123 Main Street" />
+                <ValidationMessage For="@(() => address.AddressLine1)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="addressLine2"
+                       class="form-label">Address Line 2</label>
+                <InputText id="addressLine2"
+                           class="form-control"
+                           @bind-Value="address.AddressLine2"
+                           placeholder="Apartment, suite, etc. (optional)" />
+                <ValidationMessage For="@(() => address.AddressLine2)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="addressLine3"
+                       class="form-label">Address Line 3</label>
+                <InputText id="addressLine3"
+                           class="form-control"
+                           @bind-Value="address.AddressLine3"
+                           placeholder="Additional address information (optional)" />
+                <ValidationMessage For="@(() => address.AddressLine3)" />
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="city"
+                       class="form-label">City *</label>
+                <InputText id="city"
+                           class="form-control"
+                           @bind-Value="address.City"
+                           placeholder="New York" />
+                <ValidationMessage For="@(() => address.City)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="stateProvince"
+                       class="form-label">State/Province *</label>
+                <InputText id="stateProvince"
+                           class="form-control"
+                           @bind-Value="address.StateProvince"
+                           placeholder="NY" />
+                <ValidationMessage For="@(() => address.StateProvince)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="postalCode"
+                       class="form-label">Postal Code *</label>
+                <InputText id="postalCode"
+                           class="form-control"
+                           @bind-Value="address.PostalCode"
+                           placeholder="10001" />
+                <ValidationMessage For="@(() => address.PostalCode)" />
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <button type="submit"
+                    class="btn btn-primary me-2">Submit</button>
+            <button type="button"
+                    class="btn btn-secondary"
+                    @onclick="ResetForm">Reset</button>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <ValidationSummary />
+        </div>
+    </div>
+
+    @if (isSubmitted)
+    {
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-success"
+                     role="alert">
+                    <h4 class="alert-heading">Address Submitted Successfully!</h4>
+                    <p>The address has been validated and submitted. Here's what you entered:</p>
+                    <hr>
+                    <p class="mb-0">
+                        <strong>@address.AddressLine1</strong><br />
+                        @if (!string.IsNullOrWhiteSpace(address.AddressLine2))
+                        {
+                            @address.AddressLine2
+
+                            <br />
+                        }
+                        @if (!string.IsNullOrWhiteSpace(address.AddressLine3))
+                        {
+                            @address.AddressLine3
+
+                            <br />
+                        }
+                        @address.City, @address.StateProvince @address.PostalCode
+                    </p>
+                </div>
+            </div>
+        </div>
+    }
+</EditForm>
+
+@code {
+    private Address address = new();
+
+    private bool isSubmitted = false;
+
+    private async Task HandleValidSubmit()
+    {
+        // Simulate async operation
+        await Task.Delay(500);
+
+        isSubmitted = true;
+        StateHasChanged();
+    }
+
+    private void ResetForm()
+    {
+        address = new Address();
+        isSubmitted = false;
+    }
+}

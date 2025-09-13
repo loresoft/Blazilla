@@ -1,0 +1,410 @@
+@page "/employee"
+
+<h3>Overview</h3>
+<p>
+    This example demonstrates nested validation using FluentValidation in Blazor. The Employee form showcases
+    how to validate complex objects with nested properties, including an embedded <code>Address</code> object
+    and collection properties like <code>Skills</code> and <code>AssignedProjects</code>. This pattern is
+    essential for real-world scenarios where business entities contain related data that requires validation
+    at multiple levels of the object hierarchy.
+</p>
+
+<h3>Employee Form</h3>
+
+<EditForm @ref="editForm"
+          Model="@employee"
+          OnValidSubmit="@HandleValidSubmit">
+
+    <FluentValidationValidator />
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="firstName"
+                       class="form-label">First Name *</label>
+                <InputText id="firstName"
+                           class="form-control"
+                           @bind-Value="employee.FirstName"
+                           placeholder="John" />
+                <ValidationMessage For="@(() => employee.FirstName)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="lastName"
+                       class="form-label">Last Name *</label>
+                <InputText id="lastName"
+                           class="form-control"
+                           @bind-Value="employee.LastName"
+                           placeholder="Doe" />
+                <ValidationMessage For="@(() => employee.LastName)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="email"
+                       class="form-label">Email *</label>
+                <InputText id="email"
+                           type="email"
+                           class="form-control"
+                           @bind-Value="employee.Email"
+                           placeholder="john.doe@company.com" />
+                <ValidationMessage For="@(() => employee.Email)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="phoneNumber"
+                       class="form-label">Phone Number</label>
+                <InputText id="phoneNumber"
+                           class="form-control"
+                           @bind-Value="employee.PhoneNumber"
+                           placeholder="123-456-7890" />
+                <ValidationMessage For="@(() => employee.PhoneNumber)" />
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="salary"
+                       class="form-label">Salary *</label>
+                <InputNumber id="salary"
+                             class="form-control"
+                             @bind-Value="employee.Salary"
+                             placeholder="50000" />
+                <ValidationMessage For="@(() => employee.Salary)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="hireDate"
+                       class="form-label">Hire Date *</label>
+                <InputDate id="hireDate"
+                           class="form-control"
+                           @bind-Value="employee.HireDate" />
+                <ValidationMessage For="@(() => employee.HireDate)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="departmentId"
+                       class="form-label">Department ID</label>
+                <InputNumber id="departmentId"
+                             class="form-control"
+                             @bind-Value="employee.DepartmentId"
+                             placeholder="1" />
+                <ValidationMessage For="@(() => employee.DepartmentId)" />
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="mb-3">
+                <label for="skills"
+                       class="form-label">Skills *</label>
+                <div class="input-group">
+                    <InputText id="skills"
+                               class="form-control"
+                               @bind-Value="newSkill"
+                               placeholder="Enter a skill" />
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            @onclick="AddSkill">
+                        Add Skill
+                    </button>
+                </div>
+                <ValidationMessage For="@(() => employee.Skills)" />
+
+                @if (employee.Skills.Any())
+                {
+                    <div class="mt-2">
+                        @foreach (var skill in employee.Skills)
+                        {
+                            <span class="badge bg-primary me-2 mb-1">
+                                @skill
+                                <button type="button"
+                                        class="btn-close btn-close-white ms-1"
+                                        @onclick="() => RemoveSkill(skill)"></button>
+                            </span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="mb-3">
+                <label for="projects"
+                       class="form-label">Assigned Projects</label>
+                <div class="input-group">
+                    <InputNumber id="projects"
+                                 class="form-control"
+                                 @bind-Value="newProjectId"
+                                 placeholder="Enter project ID" />
+                    <button type="button"
+                            class="btn btn-outline-secondary"
+                            @onclick="AddProject">
+                        Add Project
+                    </button>
+                </div>
+                <ValidationMessage For="@(() => employee.AssignedProjects)" />
+
+                @if (employee.AssignedProjects.Any())
+                {
+                    <div class="mt-2">
+                        @foreach (var projectId in employee.AssignedProjects)
+                        {
+                            <span class="badge bg-secondary me-2 mb-1">
+                                Project @projectId
+                                <button type="button"
+                                        class="btn-close btn-close-white ms-1"
+                                        @onclick="() => RemoveProject(projectId)"></button>
+                            </span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <h5>Home Address</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="addressLine1"
+                               class="form-label">Address Line 1 *</label>
+                        <InputText id="addressLine1"
+                                   class="form-control"
+                                   @bind-Value="employee.HomeAddress!.AddressLine1"
+                                   placeholder="123 Main Street" />
+                        <ValidationMessage For="@(() => employee.HomeAddress!.AddressLine1)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="addressLine2"
+                               class="form-label">Address Line 2</label>
+                        <InputText id="addressLine2"
+                                   class="form-control"
+                                   @bind-Value="employee.HomeAddress!.AddressLine2"
+                                   placeholder="Apartment, suite, etc. (optional)" />
+                        <ValidationMessage For="@(() => employee.HomeAddress!.AddressLine2)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="addressLine3"
+                               class="form-label">Address Line 3</label>
+                        <InputText id="addressLine3"
+                                   class="form-control"
+                                   @bind-Value="employee.HomeAddress!.AddressLine3"
+                                   placeholder="Additional address information (optional)" />
+                        <ValidationMessage For="@(() => employee.HomeAddress!.AddressLine3)" />
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="city"
+                               class="form-label">City *</label>
+                        <InputText id="city"
+                                   class="form-control"
+                                   @bind-Value="employee.HomeAddress!.City"
+                                   placeholder="New York" />
+                        <ValidationMessage For="@(() => employee.HomeAddress!.City)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="stateProvince"
+                               class="form-label">State/Province *</label>
+                        <InputText id="stateProvince"
+                                   class="form-control"
+                                   @bind-Value="employee.HomeAddress!.StateProvince"
+                                   placeholder="NY" />
+                        <ValidationMessage For="@(() => employee.HomeAddress!.StateProvince)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="postalCode"
+                               class="form-label">Postal Code *</label>
+                        <InputText id="postalCode"
+                                   class="form-control"
+                                   @bind-Value="employee.HomeAddress!.PostalCode"
+                                   placeholder="10001" />
+                        <ValidationMessage For="@(() => employee.HomeAddress!.PostalCode)" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <button type="submit"
+                    class="btn btn-primary me-2">
+                Submit
+            </button>
+            <button type="button"
+                    class="btn btn-secondary"
+                    @onclick="ResetForm">
+                Reset
+            </button>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <ValidationSummary />
+        </div>
+    </div>
+
+    @if (isSubmitted)
+    {
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-success"
+                     role="alert">
+                    <h4 class="alert-heading">Employee Submitted Successfully!</h4>
+                    <p>The employee information has been validated and submitted. Here's what you entered:</p>
+                    <hr>
+                    <div class="mb-0">
+                        <strong>@employee.FirstName @employee.LastName</strong><br />
+                        <strong>Email:</strong> @employee.Email<br />
+                        @if (!string.IsNullOrWhiteSpace(employee.PhoneNumber))
+                        {
+                            <strong>Phone:</strong>
+                            @employee.PhoneNumber
+
+                            <br />
+                        }
+                        <strong>Salary:</strong> @employee.Salary.ToString("C")<br />
+                        <strong>Hire Date:</strong> @employee.HireDate.ToString("yyyy-MM-dd")<br />
+                        <strong>Department ID:</strong> @employee.DepartmentId<br />
+
+                        @if (employee.Skills.Any())
+                        {
+                            <strong>Skills:</strong>
+                            @string.Join(", ", employee.Skills)
+
+                            <br />
+                        }
+
+                        @if (employee.AssignedProjects.Any())
+                        {
+                            <strong>Assigned Projects:</strong>
+                            @string.Join(", ", employee.AssignedProjects)
+
+                            <br />
+                        }
+
+                        @if (employee.HomeAddress != null)
+                        {
+                            <strong>Home Address:</strong>
+                            <br />
+
+                            <text>@employee.HomeAddress.AddressLine1</text>
+                            <br />
+
+                            @if (!string.IsNullOrWhiteSpace(employee.HomeAddress.AddressLine2))
+                            {
+                                <text>@employee.HomeAddress.AddressLine2</text>
+                                <br />
+                            }
+                            @if (!string.IsNullOrWhiteSpace(employee.HomeAddress.AddressLine3))
+                            {
+                                <text>@employee.HomeAddress.AddressLine3</text>
+                                <br />
+                            }
+                            <text>@employee.HomeAddress.City, @employee.HomeAddress.StateProvince @employee.HomeAddress.PostalCode</text>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</EditForm>
+
+@code {
+    private EditForm? editForm;
+
+    private Employee employee = new() { HireDate = DateTime.Today, HomeAddress = new() };
+    private bool isSubmitted = false;
+
+    private string newSkill = "";
+    private int? newProjectId;
+
+
+    private async Task HandleValidSubmit()
+    {
+        // Simulate async operation
+        await Task.Delay(500);
+
+        isSubmitted = true;
+        StateHasChanged();
+    }
+
+
+    private void ResetForm()
+    {
+        employee = new() { HireDate = DateTime.Today, HomeAddress = new() };
+
+        isSubmitted = false;
+        newSkill = "";
+        newProjectId = null;
+
+        StateHasChanged();
+    }
+
+    private void AddSkill()
+    {
+        if (string.IsNullOrWhiteSpace(newSkill))
+            return;
+
+        employee.Skills.Add(newSkill.Trim());
+
+        newSkill = "";
+
+        // Notify the EditContext that the Skills field has changed
+        var field = FieldIdentifier.Create(() => employee.Skills);
+        editForm?.EditContext?.NotifyFieldChanged(field);
+
+        StateHasChanged();
+    }
+
+    private void RemoveSkill(string skill)
+    {
+        employee.Skills.Remove(skill);
+
+        // Notify the EditContext that the Skills field has changed
+        var field = FieldIdentifier.Create(() => employee.Skills);
+        editForm?.EditContext?.NotifyFieldChanged(field);
+
+        StateHasChanged();
+    }
+
+
+    private void AddProject()
+    {
+        if (!newProjectId.HasValue)
+            return;
+
+        employee.AssignedProjects.Add(newProjectId.Value);
+
+        // Notify the EditContext that the AssignedProjects field has changed
+        var field = FieldIdentifier.Create(() => employee.AssignedProjects);
+        editForm?.EditContext?.NotifyFieldChanged(field);
+
+        newProjectId = null;
+        StateHasChanged();
+    }
+
+    private void RemoveProject(int projectId)
+    {
+        employee.AssignedProjects.Remove(projectId);
+
+        // Notify the EditContext that the AssignedProjects field has changed
+        var field = FieldIdentifier.Create(() => employee.AssignedProjects);
+        editForm?.EditContext?.NotifyFieldChanged(field);
+
+        StateHasChanged();
+    }
+}

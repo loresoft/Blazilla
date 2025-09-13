@@ -1,0 +1,358 @@
+@page "/project"
+@using BlazorShared.Services
+
+<h3>Overview</h3>
+<p>
+    This example demonstrates project management with nested milestone and deliverable validation using FluentValidation in Blazor.
+    The Project form showcases validation of nested collections, including
+    <code>Milestones</code> (collection) and <code>Deliverables</code> (nested collection within Milestones). This pattern illustrates how to
+    handle project entities with hierarchical structures and multiple collection properties
+    that require comprehensive validation at every level.
+</p>
+
+<h3>Project Form</h3>
+
+<EditForm @ref="editForm"
+          Model="@project"
+          OnValidSubmit="@HandleValidSubmit">
+
+    <FluentValidationValidator />
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="projectName"
+                       class="form-label">Project Name *</label>
+                <InputText id="projectName"
+                           class="form-control"
+                           @bind-Value="project.Name"
+                           placeholder="Enter project name" />
+                <ValidationMessage For="@(() => project.Name)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="projectDescription"
+                       class="form-label">Description</label>
+                <InputTextArea id="projectDescription"
+                               class="form-control"
+                               rows="3"
+                               @bind-Value="project.Description"
+                               placeholder="Enter project description" />
+                <ValidationMessage For="@(() => project.Description)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="budget"
+                       class="form-label">Budget *</label>
+                <InputNumber id="budget"
+                             class="form-control"
+                             @bind-Value="project.Budget"
+                             placeholder="0.00" />
+                <ValidationMessage For="@(() => project.Budget)" />
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="startDate"
+                       class="form-label">Start Date *</label>
+                <InputDate id="startDate"
+                           class="form-control"
+                           @bind-Value="project.StartDate" />
+                <ValidationMessage For="@(() => project.StartDate)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="endDate"
+                       class="form-label">End Date</label>
+                <InputDate id="endDate"
+                           class="form-control"
+                           @bind-Value="project.EndDate" />
+                <ValidationMessage For="@(() => project.EndDate)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="status"
+                       class="form-label">Status</label>
+                <InputSelect id="status"
+                             class="form-control"
+                             @bind-Value="project.Status">
+                    @foreach (var status in Enum.GetValues<ProjectStatus>())
+                    {
+                        <option value="@status">@status</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="@(() => project.Status)" />
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <h5>Milestones</h5>
+            @foreach (var milestone in project.Milestones)
+            {
+                <div @key="@milestone"
+                     class="card mb-3">
+                    <div class="card-body">
+                        <div class="row mb-2">
+                            <div class="col-md-4">
+                                <label class="form-label">Title</label>
+                                <InputText class="form-control"
+                                           placeholder="Milestone title"
+                                           @bind-Value="milestone.Title" />
+                                <ValidationMessage For="@(() => milestone.Title)" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Due Date</label>
+                                <InputDate class="form-control"
+                                           @bind-Value="milestone.DueDate" />
+                                <ValidationMessage For="@(() => milestone.DueDate)" />
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-check mt-4">
+                                    <InputCheckbox class="form-check-input"
+                                                   @bind-Value="milestone.IsCompleted" />
+                                    <label class="form-check-label">Completed</label>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">&nbsp;</label>
+                                <div>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger"
+                                            @onclick="() => RemoveMilestone(milestone)">
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <InputTextArea class="form-control"
+                                           rows="2"
+                                           placeholder="Milestone description"
+                                           @bind-Value="milestone.Description" />
+                            <ValidationMessage For="@(() => milestone.Description)" />
+                        </div>
+
+                        <div class="mt-3">
+                            <h6 class="text-muted">Deliverables</h6>
+                            @for (int d = 0; d < milestone.Deliverables.Count; d++)
+                            {
+                                var deliverableIndex = d;
+                                <div @key="@(new { milestone, deliverableIndex })"
+                                     class="input-group mb-2">
+                                    <InputText class="form-control"
+                                               placeholder="Deliverable description"
+                                               @bind-Value="milestone.Deliverables[deliverableIndex]" />
+                                    <button type="button"
+                                            class="btn btn-outline-danger"
+                                            @onclick="() => RemoveDeliverable(milestone, deliverableIndex)">
+                                        Remove
+                                    </button>
+                                </div>
+                                <ValidationMessage For="@(() => milestone.Deliverables[deliverableIndex])" />
+                            }
+
+                            <div class="input-group mb-2">
+                                <InputText class="form-control"
+                                           placeholder="Add new deliverable"
+                                           @bind-Value="newDeliverable" />
+                                <button type="button"
+                                        class="btn btn-outline-secondary"
+                                        @onclick="() => AddDeliverable(milestone)">
+                                    Add
+                                </button>
+                            </div>
+                            <ValidationMessage For="@(() => milestone.Deliverables)" />
+                        </div>
+                    </div>
+                </div>
+            }
+            <button type="button"
+                    class="btn btn-outline-primary"
+                    @onclick="AddMilestone">
+                Add Milestone
+            </button>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <button type="submit"
+                    class="btn btn-primary me-2">
+                Submit
+            </button>
+            <button type="button"
+                    class="btn btn-secondary"
+                    @onclick="ResetForm">
+                Reset
+            </button>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <ValidationSummary />
+        </div>
+    </div>
+
+    @if (isSubmitted)
+    {
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-success"
+                     role="alert">
+                    <h4 class="alert-heading">Project Submitted Successfully!</h4>
+                    <p>The project information has been validated and submitted. Here's what you entered:</p>
+                    <hr>
+                    <div class="mb-0">
+                        <strong>Project Name:</strong> @project.Name<br />
+                        @if (!string.IsNullOrWhiteSpace(project.Description))
+                        {
+                            <strong>Description:</strong>
+                            @project.Description
+
+                            <br />
+                        }
+                        <strong>Budget:</strong> @project.Budget.ToString("C")<br />
+                        <strong>Start Date:</strong> @project.StartDate.ToString("yyyy-MM-dd")<br />
+                        @if (project.EndDate.HasValue)
+                        {
+                            <strong>End Date:</strong>
+                            @project.EndDate.Value.ToString("yyyy-MM-dd")
+
+                            <br />
+                        }
+                        <strong>Status:</strong> @project.Status<br />
+                        <strong>Milestones:</strong> @project.Milestones.Count<br />
+
+                        @if (project.Milestones.Any())
+                        {
+                            <div class="mt-2">
+                                <strong>Milestone Details:</strong>
+                                <ul>
+                                    @foreach (var milestone in project.Milestones)
+                                    {
+                                        <li>
+                                            <strong>@milestone.Title</strong> - Due: @milestone.DueDate.ToString("yyyy-MM-dd")
+                                            (@(milestone.IsCompleted ? "Completed" : "Pending"))
+                                            @if (!string.IsNullOrWhiteSpace(milestone.Description))
+                                            {
+                                                <br />
+                                                <text>&nbsp;&nbsp;Description: @milestone.Description</text>
+                                            }
+                                            @if (milestone.Deliverables.Any())
+                                            {
+                                                <br />
+                                                <text>&nbsp;&nbsp;Deliverables: @string.Join(", ", milestone.Deliverables)</text>
+                                            }
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</EditForm>
+
+@code {
+    private EditForm? editForm;
+
+    private Project project = new() { StartDate = DateTime.Today };
+    private bool isSubmitted = false;
+
+    private string newDeliverable = "";
+
+    protected override void OnInitialized()
+    {
+        InitializeForm();
+    }
+
+    private void InitializeForm()
+    {
+        // Add initial milestone
+        var milestone = new ProjectMilestone
+        {
+            Id = IdentifierGenerator.GetNextId(),
+            DueDate = DateTime.Today.AddMonths(1),
+            Deliverables = []
+        };
+        project.Milestones.Add(milestone);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        // Simulate async operation
+        await Task.Delay(500);
+
+        isSubmitted = true;
+        StateHasChanged();
+    }
+
+
+    private void AddDeliverable(ProjectMilestone milestone)
+    {
+        if (milestone == null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(newDeliverable))
+            return;
+
+        milestone.Deliverables.Add(newDeliverable.Trim());
+
+        newDeliverable = "";
+
+        StateHasChanged();
+    }
+
+    private void RemoveDeliverable(ProjectMilestone milestone, int deliverableIndex)
+    {
+        if (milestone == null)
+            return;
+
+        if (deliverableIndex < 0 || deliverableIndex >= milestone.Deliverables.Count)
+            return;
+
+        milestone.Deliverables.RemoveAt(deliverableIndex);
+
+        StateHasChanged();
+    }
+
+
+    private void AddMilestone()
+    {
+        var milestone = new ProjectMilestone
+        {
+            Id = IdentifierGenerator.GetNextId(),
+            DueDate = DateTime.Today.AddMonths(1),
+            Deliverables = []
+        };
+
+        project.Milestones.Add(milestone);
+    }
+
+    private void RemoveMilestone(ProjectMilestone milestone)
+    {
+        if (milestone == null)
+            return;
+
+        project.Milestones.Remove(milestone);
+    }
+
+
+    private void ResetForm()
+    {
+        project = new() { StartDate = DateTime.Today };
+        newDeliverable = "";
+        isSubmitted = false;
+
+        InitializeForm();
+        StateHasChanged();
+    }
+}

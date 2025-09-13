@@ -1,0 +1,673 @@
+@page "/company"
+@using BlazorShared.Services
+
+<h3>Overview</h3>
+<p>
+    This example demonstrates advanced nested collection validation using FluentValidation in Blazor.
+    The Company form showcases validation of multiple levels of nested collections, including
+    <code>Departments</code> (collection), <code>Projects</code> (collection), and
+    <code>Milestones</code> (nested collection within Projects). This pattern illustrates how to
+    handle complex business entities with deep object hierarchies and multiple collection properties
+    that require comprehensive validation at every level.
+</p>
+
+<h3>Company Registration Form</h3>
+
+<EditForm @ref="editForm"
+          Model="@company"
+          OnValidSubmit="@HandleValidSubmit">
+
+    <FluentValidationValidator />
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="companyName"
+                       class="form-label">Company Name</label>
+                <InputText id="companyName"
+                           class="form-control"
+                           @bind-Value="company.Name" />
+                <ValidationMessage For="@(() => company.Name)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="registrationNumber"
+                       class="form-label">Registration Number</label>
+                <InputText id="registrationNumber"
+                           class="form-control"
+                           @bind-Value="company.RegistrationNumber"
+                           placeholder="REG-12345678" />
+                <ValidationMessage For="@(() => company.RegistrationNumber)" />
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <h5>Headquarters Address</h5>
+            <div class="mb-3">
+                <label for="addressLine1"
+                       class="form-label">Address Line 1</label>
+                <InputText id="addressLine1"
+                           class="form-control"
+                           @bind-Value="company.HeadquartersAddress!.AddressLine1" />
+                <ValidationMessage For="@(() => company.HeadquartersAddress!.AddressLine1)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="city"
+                       class="form-label">City</label>
+                <InputText id="city"
+                           class="form-control"
+                           @bind-Value="company.HeadquartersAddress!.City" />
+                <ValidationMessage For="@(() => company.HeadquartersAddress!.City)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="stateProvince"
+                       class="form-label">State/Province</label>
+                <InputText id="stateProvince"
+                           class="form-control"
+                           @bind-Value="company.HeadquartersAddress!.StateProvince" />
+                <ValidationMessage For="@(() => company.HeadquartersAddress!.StateProvince)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="postalCode"
+                       class="form-label">Postal Code</label>
+                <InputText id="postalCode"
+                           class="form-control"
+                           @bind-Value="company.HeadquartersAddress!.PostalCode" />
+                <ValidationMessage For="@(() => company.HeadquartersAddress!.PostalCode)" />
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <h5>Company Settings</h5>
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <InputCheckbox id="allowRemoteWork"
+                                                   class="form-check-input"
+                                                   @bind-Value="company.Settings!.AllowRemoteWork" />
+                                    <label for="allowRemoteWork"
+                                           class="form-check-label">Allow Remote Work</label>
+                                </div>
+                                <ValidationMessage For="@(() => company.Settings!.AllowRemoteWork)" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="maxVacationDays"
+                                       class="form-label">Max Vacation Days</label>
+                                <InputNumber id="maxVacationDays"
+                                             class="form-control"
+                                             @bind-Value="company.Settings!.MaxVacationDays" />
+                                <ValidationMessage For="@(() => company.Settings!.MaxVacationDays)" />
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Allowed Email Domains</label>
+                                @for (int i = 0; i < company.Settings!.AllowedEmailDomains.Count; i++)
+                                {
+                                    var domainIndex = i;
+                                    <div @key="@domainIndex" class="input-group mb-2">
+                                        <InputText class="form-control"
+                                                   placeholder="example.com"
+                                                   @bind-Value="company.Settings.AllowedEmailDomains[domainIndex]" />
+                                        <button type="button"
+                                                class="btn btn-outline-danger"
+                                                @onclick="() => RemoveEmailDomain(domainIndex)">
+                                            Remove
+                                        </button>
+                                    </div>
+                                    <ValidationMessage For="@(() => company.Settings.AllowedEmailDomains[domainIndex])" />
+                                }
+                                <button type="button"
+                                        class="btn btn-sm btn-outline-secondary"
+                                        @onclick="AddEmailDomain">
+                                    Add Email Domain
+                                </button>
+                                <ValidationMessage For="@(() => company.Settings.AllowedEmailDomains)" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-12">
+            <h5>Departments</h5>
+            @for (int i = 0; i < company.Departments.Count; i++)
+            {
+                // Capture the index for use in lambda expressions
+                var departmentIndex = i;
+
+                <div @key="@i"
+                     class="card mb-3">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">Department Name</label>
+                                <InputText class="form-control"
+                                           @bind-Value="company.Departments[departmentIndex].Name" />
+                                <ValidationMessage For="@(() => company.Departments[departmentIndex].Name)" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Budget</label>
+                                <InputNumber class="form-control"
+                                             @bind-Value="company.Departments[departmentIndex].Budget" />
+                                <ValidationMessage For="@(() => company.Departments[departmentIndex].Budget)" />
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button type="button"
+                                        class="btn btn-outline-danger"
+                                        @onclick="() => RemoveDepartment(departmentIndex)">
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <ValidationMessage For="@(() => company.Departments)" />
+
+            <button type="button"
+                    class="btn btn-outline-primary"
+                    @onclick="AddDepartment">
+                Add Department
+            </button>
+        </div>
+    </div>
+    <div class="row mt-4">
+        <div class="col-12">
+            <h5>Projects</h5>
+            @for (int i = 0; i < company.Projects.Count; i++)
+            {
+                // Capture the index for use in lambda expressions
+                var projectIndex = i;
+
+                <div @key="@projectIndex"
+                     class="card mb-3">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <label class="form-label">Project Name</label>
+                                <InputText class="form-control"
+                                           @bind-Value="company.Projects[projectIndex].Name" />
+                                <ValidationMessage For="@(() => company.Projects[projectIndex].Name)" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Budget</label>
+                                <InputNumber class="form-control"
+                                             @bind-Value="company.Projects[projectIndex].Budget" />
+                                <ValidationMessage For="@(() => company.Projects[projectIndex].Budget)" />
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Status</label>
+                                <InputSelect class="form-control"
+                                             @bind-Value="company.Projects[projectIndex].Status">
+                                    @foreach (var status in Enum.GetValues<ProjectStatus>())
+                                    {
+                                        <option value="@status">@status</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="button"
+                                        class="btn btn-outline-danger"
+                                        @onclick="() => RemoveProject(projectIndex)">
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="mt-3">
+                            <h6>Milestones</h6>
+                            @for (int m = 0; m < company.Projects[projectIndex].Milestones.Count; m++)
+                            {
+                                // Capture the indexes for use in lambda expressions
+                                var partentIdex = projectIndex;
+                                var milestoneIndex = m;
+
+                                <div @key="@(new { projectIndex, milestoneIndex })"
+                                     class="card mb-3">
+                                    <div class="card-body">
+                                        <div class="row mb-2">
+                                            <div class="col-md-4">
+                                                <label class="form-label">Title</label>
+                                                <InputText class="form-control"
+                                                           placeholder="Milestone title"
+                                                           @bind-Value="company.Projects[partentIdex].Milestones[milestoneIndex].Title" />
+                                                <ValidationMessage For="@(() => company.Projects[partentIdex].Milestones[milestoneIndex].Title)" />
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label class="form-label">Due Date</label>
+                                                <InputDate class="form-control"
+                                                           @bind-Value="company.Projects[partentIdex].Milestones[milestoneIndex].DueDate" />
+                                                <ValidationMessage For="@(() => company.Projects[partentIdex].Milestones[milestoneIndex].DueDate)" />
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-check mt-4">
+                                                    <InputCheckbox class="form-check-input"
+                                                                   @bind-Value="company.Projects[partentIdex].Milestones[milestoneIndex].IsCompleted" />
+                                                    <label class="form-check-label">Completed</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <label class="form-label">&nbsp;</label>
+                                                <div>
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-outline-danger"
+                                                            @onclick="() => RemoveMilestone(partentIdex, milestoneIndex)">
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mt-3">
+                                            <h6 class="text-muted">Deliverables</h6>
+                                            @for (int d = 0; d < company.Projects[partentIdex].Milestones[milestoneIndex].Deliverables.Count; d++)
+                                            {
+                                                var parentProject = partentIdex;
+                                                var parentMilestone = milestoneIndex;
+                                                var deliverableIndex = d;
+
+                                                <div @key="@(new { parentProject, parentMilestone, deliverableIndex })"
+                                                     class="input-group mb-2">
+                                                    <InputText class="form-control"
+                                                               placeholder="Deliverable description"
+                                                               @bind-Value="company.Projects[parentProject].Milestones[parentMilestone].Deliverables[deliverableIndex]" />
+                                                    <button type="button"
+                                                            class="btn btn-outline-danger"
+                                                            @onclick="() => RemoveDeliverable(parentProject, parentMilestone, deliverableIndex)">
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                                <ValidationMessage For="@(() => company.Projects[parentProject].Milestones[parentMilestone].Deliverables[deliverableIndex])" />
+                                            }
+
+                                            <div class="input-group mb-2">
+                                                <InputText class="form-control"
+                                                           placeholder="Add new deliverable"
+                                                           @bind-Value="newDeliverable" />
+                                                <button type="button"
+                                                        class="btn btn-outline-secondary"
+                                                        @onclick="() => AddDeliverable(partentIdex, milestoneIndex)">
+                                                    Add
+                                                </button>
+                                            </div>
+                                            <ValidationMessage For="@(() => company.Projects[partentIdex].Milestones[milestoneIndex].Deliverables)" />
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    @onclick="() => AddMilestone(projectIndex)">
+                                Add Milestone
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+            <button type="button"
+                    class="btn btn-outline-primary"
+                    @onclick="AddProject">
+                Add Project
+            </button>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <button type="submit"
+                    class="btn btn-primary me-2">
+                Submit
+            </button>
+            <button type="button"
+                    class="btn btn-secondary"
+                    @onclick="ResetForm">
+                Reset
+            </button>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <ValidationSummary />
+        </div>
+    </div>
+
+    @if (isSubmitted)
+    {
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-success"
+                     role="alert">
+                    <h4 class="alert-heading">Company Submitted Successfully!</h4>
+                    <p>The company information has been validated and submitted. Here's what you entered:</p>
+                    <hr>
+                    <div class="mb-0">
+                        <strong>Company Name:</strong> @company.Name<br />
+                        <strong>Registration Number:</strong> @company.RegistrationNumber<br />
+
+                        @if (company.HeadquartersAddress != null)
+                        {
+                            <strong>Headquarters Address:</strong>
+
+                            <br />
+                            <text>@company.HeadquartersAddress.AddressLine1</text>
+
+                            <br />
+                            @if (!string.IsNullOrWhiteSpace(company.HeadquartersAddress.AddressLine2))
+                            {
+                                <text>@company.HeadquartersAddress.AddressLine2</text>
+
+                                <br />
+                            }
+                            @if (!string.IsNullOrWhiteSpace(company.HeadquartersAddress.AddressLine3))
+                            {
+                                <text>@company.HeadquartersAddress.AddressLine3</text>
+
+                                <br />
+                            }
+                            <text>
+                                @company.HeadquartersAddress.City,
+                                @company.HeadquartersAddress.StateProvince @company.HeadquartersAddress.PostalCode
+                            </text>
+
+                            <br />
+                        }
+
+                        @if (company.Settings != null)
+                        {
+                            <strong>Company Settings:</strong>
+                            <br />
+                            <text>• Remote Work: @(company.Settings.AllowRemoteWork ? "Allowed" : "Not Allowed")</text>
+                            <br />
+                            <text>• Max Vacation Days: @company.Settings.MaxVacationDays</text>
+                            <br />
+                            @if (company.Settings.AllowedEmailDomains.Any())
+                            {
+                                <text>• Email Domains: @string.Join(", ", company.Settings.AllowedEmailDomains)</text>
+                                <br />
+                            }
+                            @if (company.Settings.CustomSettings.Any())
+                            {
+                                <text>• Custom Settings: @company.Settings.CustomSettings.Count total</text>
+                                <br />
+                            }
+                        }
+
+                        @if (company.Departments.Any())
+                        {
+                            <strong>Departments:</strong>
+
+                            <br />
+                            @foreach (var dept in company.Departments)
+                            {
+                                <text>• @dept.Name (Budget: @dept.Budget.ToString("C"))</text>
+
+                                <br />
+                            }
+                        }
+
+                        @if (company.Projects.Any())
+                        {
+                            <strong>Projects:</strong>
+
+                            <br />
+                            @foreach (var project in company.Projects)
+                            {
+                                <text>• @project.Name - @project.Status (Budget: @project.Budget.ToString("C"))</text>
+
+                                <br />
+                                @if (project.Milestones.Any())
+                                {
+                                    <text>&nbsp;&nbsp;Milestones: @project.Milestones.Count total</text>
+                                    <br />
+                                }
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</EditForm>
+
+@code {
+    private EditForm? editForm;
+
+    private Company company = new();
+    private bool isSubmitted = false;
+
+    private string newDeliverable = "";
+
+    protected override void OnInitialized()
+    {
+        InitializeForm();
+    }
+
+
+    private void InitializeForm()
+    {
+        // Add initial department
+        var department = new Department
+        {
+            Id = IdentifierGenerator.GetNextId(),
+            Name = "",
+            Budget = 0,
+        };
+        company.Departments.Add(department);
+
+        // Add initial project
+        var project = new Project
+        {
+            Id = IdentifierGenerator.GetNextId(),
+            StartDate = DateTime.Today,
+            Status = ProjectStatus.Planning,
+            Milestones = new List<ProjectMilestone>()
+        };
+        company.Projects.Add(project);
+
+        // Add initial email domain
+        company.Settings!.AllowedEmailDomains.Add("");
+    }
+
+
+    private void AddDepartment()
+    {
+        var department = new Department
+        {
+            Id = IdentifierGenerator.GetNextId(),
+            Name = "",
+            Budget = 0,
+        };
+
+        company.Departments.Add(department);
+
+        // Notify the EditContext that a field has changed
+        var field = FieldIdentifier.Create(() => company.Departments);
+        editForm?.EditContext?.NotifyFieldChanged(field);
+    }
+
+    private void RemoveDepartment(int index)
+    {
+        if (index < 0 || index >= company.Departments.Count)
+            return;
+
+        company.Departments.RemoveAt(index);
+
+        // Notify the EditContext that a field has changed
+        var field = FieldIdentifier.Create(() => company.Departments);
+        editForm?.EditContext?.NotifyFieldChanged(field);
+    }
+
+
+    private void AddProject()
+    {
+        var project = new Project
+        {
+            Id = IdentifierGenerator.GetNextId(),
+            StartDate = DateTime.Today,
+            Status = ProjectStatus.Planning,
+            Milestones = new List<ProjectMilestone>()
+        };
+
+        company.Projects.Add(project);
+
+        // Notify the EditContext that a field has changed
+        var field = FieldIdentifier.Create(() => company.Projects);
+        editForm?.EditContext?.NotifyFieldChanged(field);
+
+    }
+
+    private void RemoveProject(int index)
+    {
+        if (index < 0 || index >= company.Projects.Count)
+            return;
+
+        company.Projects.RemoveAt(index);
+
+        // Notify the EditContext that a field has changed
+        var field = FieldIdentifier.Create(() => company.Projects);
+        editForm?.EditContext?.NotifyFieldChanged(field);
+    }
+
+
+    private void AddMilestone(int projectIndex)
+    {
+        if (projectIndex < 0 || projectIndex >= company.Projects.Count)
+            return;
+
+        var project = company.Projects[projectIndex];
+
+        var milestone = new ProjectMilestone
+        {
+            Id = IdentifierGenerator.GetNextId(),
+            DueDate = DateTime.Today.AddMonths(1),
+            Deliverables = new List<string>()
+        };
+
+        project.Milestones.Add(milestone);
+
+        // Notify the EditContext that a field has changed
+        var field = FieldIdentifier.Create(() => project.Milestones);
+        editForm?.EditContext?.NotifyFieldChanged(field);
+
+    }
+
+    private void RemoveMilestone(int projectIndex, int milestoneIndex)
+    {
+        if (projectIndex < 0 || projectIndex >= company.Projects.Count)
+            return;
+
+        var project = company.Projects[projectIndex];
+        if (milestoneIndex < 0 || milestoneIndex >= project.Milestones.Count)
+            return;
+
+        project.Milestones.RemoveAt(milestoneIndex);
+
+        // Notify the EditContext that a field has changed
+        var field = FieldIdentifier.Create(() => project.Milestones);
+        editForm?.EditContext?.NotifyFieldChanged(field);
+    }
+
+
+    private void AddDeliverable(int projectIndex, int milestoneIndex)
+    {
+        if (string.IsNullOrWhiteSpace(newDeliverable))
+            return;
+
+        if (projectIndex < 0 || projectIndex >= company.Projects.Count)
+            return;
+
+        var project = company.Projects[projectIndex];
+
+        if (milestoneIndex < 0 || milestoneIndex >= project.Milestones.Count)
+            return;
+
+        var milestone = project.Milestones[milestoneIndex];
+        milestone.Deliverables.Add(newDeliverable.Trim());
+
+        // Notify the EditContext that a field has changed
+        var field = FieldIdentifier.Create(() => milestone.Deliverables);
+        editForm?.EditContext?.NotifyFieldChanged(field);
+
+        newDeliverable = "";
+
+        StateHasChanged();
+    }
+
+    private void RemoveDeliverable(int projectIndex, int milestoneIndex, int deliverableIndex)
+    {
+        if (projectIndex < 0 || projectIndex >= company.Projects.Count)
+            return;
+
+        var project = company.Projects[projectIndex];
+
+        if (milestoneIndex < 0 || milestoneIndex >= project.Milestones.Count)
+            return;
+
+        var milestone = project.Milestones[milestoneIndex];
+
+        if (deliverableIndex < 0 || deliverableIndex >= milestone.Deliverables.Count)
+            return;
+
+        milestone.Deliverables.RemoveAt(deliverableIndex);
+
+        // Notify the EditContext that a field has changed
+        var field = FieldIdentifier.Create(() => milestone.Deliverables);
+        editForm?.EditContext?.NotifyFieldChanged(field);
+
+        StateHasChanged();
+    }
+
+
+    private void AddEmailDomain()
+    {
+        company.Settings!.AllowedEmailDomains.Add("");
+    }
+
+    private void RemoveEmailDomain(int index)
+    {
+        if (index < 0 || index >= company.Settings!.AllowedEmailDomains.Count)
+            return;
+
+        company.Settings.AllowedEmailDomains.RemoveAt(index);
+    }
+
+
+
+    private async Task HandleValidSubmit()
+    {
+        // Simulate async operation
+        await Task.Delay(500);
+
+        isSubmitted = true;
+        StateHasChanged();
+    }
+
+    private void ResetForm()
+    {
+        company = new Company
+        {
+            HeadquartersAddress = new Address(),
+            Settings = new CompanySettings()
+        };
+        InitializeForm();
+
+        isSubmitted = false;
+        StateHasChanged();
+    }
+}
