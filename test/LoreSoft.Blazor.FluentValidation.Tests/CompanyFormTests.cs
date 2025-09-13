@@ -35,22 +35,25 @@ public class CompanyFormTests : TestContext
         form.Submit();
 
         // Assert
-        var validationMessages = component.FindAll(".validation-message");
-        for (var i = 0; i < validationMessages.Count; i++)
+        component.WaitForAssertion(() =>
         {
-            _outputHelper.WriteLine("Validation Message {0}: {1}", i, validationMessages[i].TextContent);
-        }
+            var validationMessages = component.FindAll(".validation-message");
+            for (var i = 0; i < validationMessages.Count; i++)
+            {
+                _outputHelper.WriteLine("Validation Message {0}: {1}", i, validationMessages[i].TextContent);
+            }
 
-        // Should have validation errors for company name, registration number, address fields, etc.
-        component.Markup.Should().Contain(CompanyValidator.NameRequired);
-        component.Markup.Should().Contain(CompanyValidator.RegistrationRequired);
+            // Should have validation errors for company name, registration number, address fields, etc.
+            component.Markup.Should().Contain(CompanyValidator.NameRequired);
+            component.Markup.Should().Contain(CompanyValidator.RegistrationRequired);
 
-        component.Markup.Should().Contain(AddressValidator.Line1Required);
-        component.Markup.Should().Contain(AddressValidator.CityRequired);
-        component.Markup.Should().Contain(AddressValidator.PostalCodeRequired);
+            component.Markup.Should().Contain(AddressValidator.Line1Required);
+            component.Markup.Should().Contain(AddressValidator.CityRequired);
+            component.Markup.Should().Contain(AddressValidator.PostalCodeRequired);
 
-        component.Markup.Should().Contain(DepartmentValidator.NameRequired);
-        component.Markup.Should().Contain(DepartmentValidator.BudgetMin);
+            component.Markup.Should().Contain(DepartmentValidator.NameRequired);
+            component.Markup.Should().Contain(DepartmentValidator.BudgetMin);
+        }, TimeSpan.FromSeconds(1));
     }
 
     [Fact]
@@ -66,9 +69,12 @@ public class CompanyFormTests : TestContext
         form.Submit();
 
         // Assert - Company name should be valid, but other fields should show errors
-        component.Markup.Should().NotContain(CompanyValidator.NameRequired);
-        component.Markup.Should().Contain(CompanyValidator.RegistrationRequired);
-        component.Markup.Should().Contain(AddressValidator.Line1Required);
+        component.WaitForAssertion(() =>
+        {
+            component.Markup.Should().NotContain(CompanyValidator.NameRequired);
+            component.Markup.Should().Contain(CompanyValidator.RegistrationRequired);
+            component.Markup.Should().Contain(AddressValidator.Line1Required);
+        }, TimeSpan.FromSeconds(1));
     }
 
     [Fact]
@@ -85,7 +91,10 @@ public class CompanyFormTests : TestContext
         form.Submit();
 
         // Assert
-        component.Markup.Should().Contain(CompanyValidator.RegistrationPattern);
+        component.WaitForAssertion(() =>
+        {
+            component.Markup.Should().Contain(CompanyValidator.RegistrationPattern);
+        }, TimeSpan.FromSeconds(1));
     }
 
     [Fact]
@@ -104,11 +113,14 @@ public class CompanyFormTests : TestContext
         form.Submit();
 
         // Assert
-        component.Markup.Should().NotContain(CompanyValidator.NameRequired);
-        component.Markup.Should().NotContain(CompanyValidator.RegistrationRequired);
-        component.Markup.Should().NotContain(AddressValidator.Line1Required);
-        component.Markup.Should().Contain(AddressValidator.CityRequired);
-        component.Markup.Should().Contain(AddressValidator.PostalCodeRequired);
+        component.WaitForAssertion(() =>
+        {
+            component.Markup.Should().NotContain(CompanyValidator.NameRequired);
+            component.Markup.Should().NotContain(CompanyValidator.RegistrationRequired);
+            component.Markup.Should().NotContain(AddressValidator.Line1Required);
+            component.Markup.Should().Contain(AddressValidator.CityRequired);
+            component.Markup.Should().Contain(AddressValidator.PostalCodeRequired);
+        }, TimeSpan.FromSeconds(1));
     }
 
     [Fact]
@@ -124,8 +136,11 @@ public class CompanyFormTests : TestContext
         form.Submit();
 
         // Assert
-        component.Markup.Should().Contain(DepartmentValidator.NameRequired);
-        component.Markup.Should().Contain(DepartmentValidator.BudgetMin);
+        component.WaitForAssertion(() =>
+        {
+            component.Markup.Should().Contain(DepartmentValidator.NameRequired);
+            component.Markup.Should().Contain(DepartmentValidator.BudgetMin);
+        }, TimeSpan.FromSeconds(1));
     }
 
     [Fact]
@@ -141,8 +156,11 @@ public class CompanyFormTests : TestContext
         form.Submit();
 
         // Assert
-        component.Markup.Should().Contain(ProjectValidator.NameRequired);
-        component.Markup.Should().Contain(ProjectValidator.BudgetMin);
+        component.WaitForAssertion(() =>
+        {
+            component.Markup.Should().Contain(ProjectValidator.NameRequired);
+            component.Markup.Should().Contain(ProjectValidator.BudgetMin);
+        }, TimeSpan.FromSeconds(1));
     }
 
     [Fact]
@@ -158,7 +176,7 @@ public class CompanyFormTests : TestContext
         component.WaitForAssertion(() =>
         {
             component.Markup.Should().Contain(CompanyValidator.NameRequired);
-        });
+        }, TimeSpan.FromSeconds(1));
     }
 
     [Fact]
@@ -175,7 +193,10 @@ public class CompanyFormTests : TestContext
         form.Submit();
 
         // Assert - Should not show registration pattern error
-        component.Markup.Should().NotContain(CompanyValidator.RegistrationPattern);
+        component.WaitForAssertion(() =>
+        {
+            component.Markup.Should().NotContain(CompanyValidator.RegistrationPattern);
+        }, TimeSpan.FromSeconds(1));
     }
 
     private static void FillBasicCompanyData(IRenderedComponent<CompanyForm> component)

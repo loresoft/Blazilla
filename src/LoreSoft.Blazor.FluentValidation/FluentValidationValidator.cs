@@ -128,13 +128,13 @@ public class FluentValidationValidator : ComponentBase, IDisposable
     /// </summary>
     /// <remarks>
     /// <para>
-    /// When <c>true</c>, asynchronous validators will be executed using Task.Run()
-    /// to avoid blocking the UI thread. When <c>false</c>, synchronous validation
-    /// will be performed.
+    /// When <c>true</c>, asynchronous validators will be executed directly using ValidateAsync()
+    /// for optimal performance. When <c>false</c>, synchronous validation
+    /// will be performed using Validate().
     /// </para>
     /// <para>
-    /// Note that using async mode with synchronous validation calls may impact performance
-    /// as it involves task scheduling overhead.
+    /// Async mode should be enabled when your validators contain async validation rules (MustAsync, etc.)
+    /// to ensure proper asynchronous execution.
     /// </para>
     /// </remarks>
     [Parameter]
@@ -202,7 +202,7 @@ public class FluentValidationValidator : ComponentBase, IDisposable
     /// </summary>
     /// <param name="sender">The source of the event.</param>
     /// <param name="eventArgs">The event arguments containing the field identifier.</param>
-    private void OnFieldChanged(object? sender, FieldChangedEventArgs eventArgs)
+    private async void OnFieldChanged(object? sender, FieldChangedEventArgs eventArgs)
     {
         if (_currentContext == null || _currentValidator == null)
             return;
@@ -222,12 +222,15 @@ public class FluentValidationValidator : ComponentBase, IDisposable
         if (context == null)
             return;
 
-        var validationResults = Validate(context);
+        var validationResults = AsyncMode
+            ? await _currentValidator.ValidateAsync(context).ConfigureAwait(false)
+            : _currentValidator.Validate(context);
 
         // update messages for the specific field
         ApplyValidationResults(validationResults, fieldIdentifier);
 
-        _currentContext.NotifyValidationStateChanged();
+        // notify on UI thread
+        _ = InvokeAsync(_currentContext.NotifyValidationStateChanged);
     }
 
     /// <summary>
@@ -236,7 +239,7 @@ public class FluentValidationValidator : ComponentBase, IDisposable
     /// </summary>
     /// <param name="sender">The source of the event.</param>
     /// <param name="eventArgs">The event arguments for the validation request.</param>
-    private void OnValidationRequested(object? sender, ValidationRequestedEventArgs eventArgs)
+    private async void OnValidationRequested(object? sender, ValidationRequestedEventArgs eventArgs)
     {
         if (_currentContext == null || _currentValidator == null)
             return;
@@ -246,43 +249,15 @@ public class FluentValidationValidator : ComponentBase, IDisposable
         if (context == null)
             return;
 
-        var validationResults = Validate(context);
+        var validationResults = AsyncMode
+            ? await _currentValidator.ValidateAsync(context).ConfigureAwait(false)
+            : _currentValidator.Validate(context);
 
         // update messages for all fields
         ApplyValidationResults(validationResults);
 
-        _currentContext.NotifyValidationStateChanged();
-    }
-
-    /// <summary>
-    /// Performs asynchronous validation using the current validator.
-    /// </summary>
-    /// <param name="validationContext">The validation context containing the model and validation settings.</param>
-    /// <returns>A task representing the asynchronous validation operation that returns validation results.</returns>
-    private async Task<ValidationResult> ValidateAsync(IValidationContext validationContext)
-    {
-        if (_currentValidator == null)
-            return new ValidationResult();
-
-        // Avoid capturing the context to prevent sync over async deadlock
-        return await _currentValidator.ValidateAsync(validationContext).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Performs validation using the current validator, with support for both synchronous and asynchronous modes.
-    /// </summary>
-    /// <param name="validationContext">The validation context containing the model and validation settings.</param>
-    /// <returns>The validation results containing any validation errors.</returns>
-    private ValidationResult Validate(IValidationContext validationContext)
-    {
-        if (_currentValidator == null)
-            return new ValidationResult();
-
-        if (!AsyncMode)
-            return _currentValidator.Validate(validationContext);
-
-        // preferred Task.Run() over .Result or .Wait() because it avoids potential deadlocks
-        return Task.Run(() => ValidateAsync(validationContext)).GetAwaiter().GetResult();
+        // notify on UI thread
+        _ = InvokeAsync(_currentContext.NotifyValidationStateChanged);
     }
 
     /// <summary>
@@ -362,8 +337,10 @@ public class FluentValidationValidator : ComponentBase, IDisposable
     /// </summary>
     /// <param name="validationResults">The validation results containing validation errors to display.</param>
     /// <param name="fieldIdentifier">The field identifier for the specific field being validated, or null for the entire model.</param>
-    private void ApplyValidationResults(ValidationResult validationResults, FieldIdentifier? fieldIdentifier = null)
+    private void ApplyValidationResults(ValidationResult? validationResults, FieldIdentifier? fieldIdentifier = null)
     {
+        validationResults ??= new ValidationResult();
+
         // clear previous messages for the field or all fields
         if (fieldIdentifier != null)
             _messages?.Clear(fieldIdentifier.Value);
@@ -383,6 +360,10 @@ public class FluentValidationValidator : ComponentBase, IDisposable
             // try to find the field by path, if that fails, create a new identifier
             var field = PathResolver.FindField(model, validationFailure.PropertyName)
                 ?? new FieldIdentifier(model, validationFailure.PropertyName);
+
+            // when validating a specific field, skip messages for other fields
+            if (fieldIdentifier != null && !field.Equals(fieldIdentifier.Value))
+                continue;
 
             // message store handles multiple messages per field
             _messages?.Add(field, validationFailure.ErrorMessage);

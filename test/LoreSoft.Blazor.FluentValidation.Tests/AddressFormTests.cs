@@ -23,14 +23,16 @@ public class AddressFormTests : TestContext
         form.Submit();
 
         // Assert
-        var validationMessages = component.FindAll(".validation-message");
+        component.WaitForAssertion(() =>
+        {
+            var validationMessages = component.FindAll(".validation-message");
+            validationMessages.Should().NotBeEmpty();
 
-        validationMessages.Should().NotBeEmpty();
-
-        component.Markup.Should().Contain(AddressValidator.Line1Required);
-        component.Markup.Should().Contain(AddressValidator.CityRequired);
-        component.Markup.Should().Contain(AddressValidator.StateProvinceRequired);
-        component.Markup.Should().Contain(AddressValidator.PostalCodeRequired);
+            component.Markup.Should().Contain(AddressValidator.Line1Required);
+            component.Markup.Should().Contain(AddressValidator.CityRequired);
+            component.Markup.Should().Contain(AddressValidator.StateProvinceRequired);
+            component.Markup.Should().Contain(AddressValidator.PostalCodeRequired);
+        }, TimeSpan.FromSeconds(1));
     }
 
     [Fact]
@@ -49,11 +51,14 @@ public class AddressFormTests : TestContext
         form.Submit();
 
         // Assert
-        var validationMessages = component.FindAll(".validation-message");
-        foreach (var message in validationMessages)
+        component.WaitForAssertion(() =>
         {
-            message.InnerHtml.Should().BeEmpty();
-        }
+            var validationMessages = component.FindAll(".validation-message");
+            foreach (var message in validationMessages)
+            {
+                message.InnerHtml.Should().BeEmpty();
+            }
+        }, TimeSpan.FromSeconds(1));
     }
 
     [Fact]
@@ -101,7 +106,7 @@ public class AddressFormTests : TestContext
             component.Markup.Should().NotContain(AddressValidator.CityRequired);
             component.Markup.Should().NotContain(AddressValidator.StateProvinceRequired);
             component.Markup.Should().NotContain(AddressValidator.PostalCodeRequired);
-        });
+        }, TimeSpan.FromSeconds(1));
     }
 
     [Fact]
@@ -119,10 +124,13 @@ public class AddressFormTests : TestContext
         form.Submit();
 
         // Assert
-        component.Markup.Should().NotContain(AddressValidator.Line1Required);
-        component.Markup.Should().NotContain(AddressValidator.CityRequired);
-        component.Markup.Should().Contain(AddressValidator.StateProvinceRequired);
-        component.Markup.Should().Contain(AddressValidator.PostalCodeRequired);
+        component.WaitForAssertion(() =>
+        {
+            component.Markup.Should().NotContain(AddressValidator.Line1Required);
+            component.Markup.Should().NotContain(AddressValidator.CityRequired);
+            component.Markup.Should().Contain(AddressValidator.StateProvinceRequired);
+            component.Markup.Should().Contain(AddressValidator.PostalCodeRequired);
+        }, TimeSpan.FromSeconds(1));
     }
 
     [Fact]
@@ -142,15 +150,15 @@ public class AddressFormTests : TestContext
         form.Submit();
 
         // Assert - Should not show validation errors for optional fields
-        var validationMessages = component.FindAll(".validation-message");
-        foreach (var message in validationMessages)
-        {
-            message.InnerHtml.Should().BeEmpty();
-        }
-
-        // Should submit successfully
         component.WaitForAssertion(() =>
         {
+            var validationMessages = component.FindAll(".validation-message");
+            foreach (var message in validationMessages)
+            {
+                message.InnerHtml.Should().BeEmpty();
+            }
+
+            // Should submit successfully
             var successAlert = component.Find(".alert-success");
             successAlert.Should().NotBeNull();
         }, TimeSpan.FromSeconds(1));

@@ -354,7 +354,9 @@ The `FluentValidationValidator` component supports the following parameters:
 - Validators should be registered as singletons in the DI container since they are stateless and can be safely shared across requests/components
 - Validators are cached and reused when resolved from dependency injection
 - Validation contexts are created using compiled expression trees for optimal performance
-- Asynchronous validation uses `Task.Run()` to prevent UI thread blocking
+- Asynchronous validation executes async validators directly, ensuring responsive UI performance
+
+> **AsyncMode**: Only enable `AsyncMode="true"` when your validators contain actual async rules (like `MustAsync`). Using async mode with purely synchronous validators introduces unnecessary overhead from async state machine generation and task scheduling, even though the validation logic itself is synchronous
 
 ## Troubleshooting
 
