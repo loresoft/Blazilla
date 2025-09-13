@@ -103,18 +103,14 @@
             <h2 class="mb-4">
                 <i class="bi bi-code-slash me-2"></i>Basic Usage Example
             </h2>
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">1. Create Your Model & Validator</h5>
-                    <pre class="bg-dark text-light p-3 rounded"><code>@codeExample1</code></pre>
+            <h5 class="card-title">1. Create Your Model & Validator</h5>
+            <pre class="bg-dark text-light p-3 rounded"><code>@codeExample1</code></pre>
 
-                    <h5 class="card-title mt-4">2. Register in Program.cs</h5>
-                    <pre class="bg-dark text-light p-3 rounded"><code>@codeExample2</code></pre>
+            <h5 class="card-title mt-4">2. Register in Program.cs</h5>
+            <pre class="bg-dark text-light p-3 rounded"><code>@codeExample2</code></pre>
 
-                    <h5 class="card-title mt-4">3. Use in Your Blazor Component</h5>
-                    <pre class="bg-dark text-light p-3 rounded"><code>@codeExample3</code></pre>
-                </div>
-            </div>
+            <h5 class="card-title mt-4">3. Use in Your Blazor Component</h5>
+            <pre class="bg-dark text-light p-3 rounded"><code>@codeExample3</code></pre>
         </div>
     </div>
 
@@ -124,47 +120,29 @@
                 <i class="bi bi-tools me-2"></i>Advanced Features
             </h2>
 
-            <div class="accordion" id="advancedFeaturesAccordion">
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="asyncValidationHeading">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#asyncValidationCollapse">
-                            <i class="bi bi-clock-fill me-2"></i>Asynchronous Validation
-                        </button>
-                    </h2>
-                    <div id="asyncValidationCollapse" class="accordion-collapse collapse" data-bs-parent="#advancedFeaturesAccordion">
-                        <div class="accordion-body">
-                            <p>Enable async validation for database checks, API calls, and other asynchronous operations:</p>
-                            <pre class="bg-dark text-light p-3 rounded"><code>@asyncValidationExample</code></pre>
-                        </div>
-                    </div>
+            <div class="row g-4">
+                <div class="col-12">
+                    <h4 class="card-title text-primary">
+                        <i class="bi bi-clock-fill me-2"></i>Asynchronous Validation
+                    </h4>
+                    <p>Enable async validation for database checks, API calls, and other asynchronous operations:</p>
+                    <pre class="bg-dark text-light p-3 rounded"><code>@asyncValidationExample</code></pre>
                 </div>
 
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="ruleSetsHeading">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ruleSetsCollapse">
-                            <i class="bi bi-tags-fill me-2"></i>Rule Sets
-                        </button>
-                    </h2>
-                    <div id="ruleSetsCollapse" class="accordion-collapse collapse" data-bs-parent="#advancedFeaturesAccordion">
-                        <div class="accordion-body">
-                            <p>Execute specific groups of validation rules for different scenarios:</p>
-                            <pre class="bg-dark text-light p-3 rounded"><code>@ruleSetsExample</code></pre>
-                        </div>
-                    </div>
+                <div class="col-12">
+                    <h4 class="card-title text-success">
+                        <i class="bi bi-tags-fill me-2"></i>Rule Sets
+                    </h4>
+                    <p>Execute specific groups of validation rules for different scenarios:</p>
+                    <pre class="bg-dark text-light p-3 rounded"><code>@ruleSetsExample</code></pre>
                 </div>
 
-                <div class="accordion-item">
-                    <h2 class="accordion-header" id="nestedObjectsHeading">
-                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#nestedObjectsCollapse">
-                            <i class="bi bi-layers-fill me-2"></i>Nested Object Validation
-                        </button>
-                    </h2>
-                    <div id="nestedObjectsCollapse" class="accordion-collapse collapse" data-bs-parent="#advancedFeaturesAccordion">
-                        <div class="accordion-body">
-                            <p>Validate complex objects with nested properties:</p>
-                            <pre class="bg-dark text-light p-3 rounded"><code>@nestedObjectsExample</code></pre>
-                        </div>
-                    </div>
+                <div class="col-12">
+                    <h4 class="card-title text-info">
+                        <i class="bi bi-layers-fill me-2"></i>Nested Object Validation
+                    </h4>
+                    <p>Validate complex objects with nested properties:</p>
+                    <pre class="bg-dark text-light p-3 rounded"><code>@nestedObjectsExample</code></pre>
                 </div>
             </div>
         </div>
@@ -190,31 +168,51 @@
                             <td><code>Validator</code></td>
                             <td><code>IValidator?</code></td>
                             <td><code>null</code></td>
-                            <td>The FluentValidation validator instance to use. If not provided, the component will attempt to resolve a validator from the dependency injection container based on the EditForm's model type.</td>
+                            <td>
+								The FluentValidation validator instance to use. If not provided, the component will
+                                attempt to resolve a validator from the dependency injection container based on the
+                                EditForm's model type.
+							</td>
                         </tr>
                         <tr>
                             <td><code>RuleSets</code></td>
                             <td><code>IEnumerable&lt;string&gt;?</code></td>
                             <td><code>null</code></td>
-                            <td>Collection of rule set names to execute. Only validation rules within the specified rule sets will be executed. Use this to run targeted validation scenarios (e.g., "Create", "Update", "Profile").</td>
+                            <td>
+								Collection of rule set names to execute. Only validation rules within the specified rule
+                                sets will be executed. Use this to run targeted validation scenarios (e.g., "Create",
+                                "Update", "Profile").
+							</td>
                         </tr>
                         <tr>
                             <td><code>AllRules</code></td>
                             <td><code>bool</code></td>
                             <td><code>false</code></td>
-                            <td>When true, executes all validation rules including those defined within rule sets. When false (default), only executes rules not in any rule set plus any specified in the RuleSets parameter.</td>
+                            <td>
+								When true, executes all validation rules including those defined within rule sets. When
+                                false (default), only executes rules not in any rule set plus any specified in the
+                                RuleSets parameter.
+							</td>
                         </tr>
                         <tr>
                             <td><code>AsyncMode</code></td>
                             <td><code>bool</code></td>
                             <td><code>false</code></td>
-                            <td>Enables asynchronous validation mode for validators containing async rules (MustAsync, etc.). When enabled, validation will be performed asynchronously and may show a brief delay for async operations like database checks.</td>
+                            <td>
+								Enables asynchronous validation mode for validators containing async rules (MustAsync,
+                                etc.). When enabled, validation will be performed asynchronously and may show a brief
+                                delay for async operations like database checks.
+							</td>
                         </tr>
                         <tr>
                             <td><code>Selector</code></td>
                             <td><code>IValidatorSelector?</code></td>
                             <td><code>null</code></td>
-                            <td>Custom validator selector implementation for advanced scenarios requiring fine-grained control over which validation rules execute. Allows conditional rule execution based on custom logic, property paths, or validation context.</td>
+                            <td>
+								Custom validator selector implementation for advanced scenarios requiring fine-grained
+                                control over which validation rules execute. Allows conditional rule execution based on
+                                custom logic, property paths, or validation context.
+							</td>
                         </tr>
                     </tbody>
                 </table>
@@ -255,19 +253,32 @@
                     <ul class="list-unstyled mb-0">
                         <li class="mb-2">
                             <i class="bi bi-check-circle-fill text-success me-2"></i>
-                            <strong>Register validators in dependency injection</strong> - Always register your validators as singleton services in the DI container. This enables automatic validator resolution and promotes testability. Use <code>AddSingleton&lt;IValidator&lt;TModel&gt;, TValidator&gt;()</code> in your Program.cs file since validators are stateless and can be safely reused.
+                            <strong>Register validators in dependency injection</strong> - Always register your
+                            validators as singleton services in the DI container. This enables automatic validator
+                            resolution and promotes testability. Use
+                            <code>AddSingleton&lt;IValidator&lt;TModel&gt;, TValidator&gt;()</code> in your Program.cs
+                            file since validators are stateless and can be safely reused.
                         </li>
                         <li class="mb-2">
                             <i class="bi bi-check-circle-fill text-success me-2"></i>
-                            <strong>Use rule sets for different validation scenarios</strong> - Organize validation rules into logical groups using RuleSet() to support different workflows like "Create", "Update", or "Admin". This allows you to validate only relevant rules for specific user actions or UI states.
+                            <strong>Use rule sets for different validation scenarios</strong> - Organize validation
+                            rules into logical groups using RuleSet() to support different workflows like "Create",
+                            "Update", or "Admin". This allows you to validate only relevant rules for specific user
+                            actions or UI states.
                         </li>
                         <li class="mb-2">
                             <i class="bi bi-check-circle-fill text-success me-2"></i>
-                            <strong>Enable async mode only when needed</strong> - Use AsyncMode="true" only for validators containing MustAsync rules. Async validation should be reserved for operations like database uniqueness checks, API calls, or external service validations that truly require asynchronous execution.
+                            <strong>Enable async mode only when needed</strong> - Use AsyncMode="true" only for
+                            validators containing MustAsync rules. Async validation should be reserved for operations
+                            like database uniqueness checks, API calls, or external service validations that truly
+                            require asynchronous execution.
                         </li>
                         <li class="mb-0">
                             <i class="bi bi-check-circle-fill text-success me-2"></i>
-                            <strong>Leverage nested validation for complex models</strong> - Use SetValidator() to validate nested objects and collections. This maintains clean separation of concerns and allows reusable validators for shared objects like Address, Contact, or Profile information across multiple forms.
+                            <strong>Leverage nested validation for complex models</strong> - Use SetValidator() to
+                            validate nested objects and collections. This maintains clean separation of concerns and
+                            allows reusable validators for shared objects like Address, Contact, or Profile information
+                            across multiple forms.
                         </li>
                     </ul>
                 </div>
@@ -305,7 +316,7 @@
 
     .feature-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
     }
 
     .text-purple {
