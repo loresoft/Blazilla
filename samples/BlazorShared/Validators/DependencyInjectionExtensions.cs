@@ -9,7 +9,7 @@ namespace BlazorShared.Validators;
 
 public static class DependencyInjectionExtensions
 {
-    public static IServiceCollection AddValidators(this IServiceCollection services)
+    public static IServiceCollection AddSharedValidators(this IServiceCollection services)
     {
         services.TryAddSingleton<IValidator<Address>, AddressValidator>();
         services.TryAddSingleton<IValidator<Company>, CompanyValidator>();

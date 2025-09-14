@@ -16,7 +16,7 @@ public static class Program
             .AddRazorComponents()
             .AddInteractiveServerComponents();
 
-        builder.Services.AddValidators();
+        builder.Services.AddSharedValidators();
 
         var app = builder.Build();
 

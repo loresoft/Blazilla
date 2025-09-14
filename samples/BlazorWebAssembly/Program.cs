@@ -18,7 +18,7 @@ public static class Program
         builder.Services
             .AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
-        builder.Services.AddValidators();
+        builder.Services.AddSharedValidators();
 
         await builder
             .Build()
