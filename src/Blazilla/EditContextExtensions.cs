@@ -44,14 +44,14 @@ public static class EditContextExtensions
 #pragma warning restore MA0042 // Do not use blocking calls in an async method
 
         // check for any pending async validation task
-        if (editContext.Properties.TryGetValue(FluentValidationValidator.PendingTask, out var pendingTask)
+        if (editContext.Properties.TryGetValue(FluentValidator.PendingTask, out var pendingTask)
             && pendingTask is Task<ValidationResult> task)
         {
             // await the async validation task to complete, pending task will update the message store when done
             await task.ConfigureAwait(false);
 
             // remove the completed task from properties
-            editContext.Properties.Remove(FluentValidationValidator.PendingTask);
+            editContext.Properties.Remove(FluentValidator.PendingTask);
         }
 
         // the validation will update the message store, check if there are any messages

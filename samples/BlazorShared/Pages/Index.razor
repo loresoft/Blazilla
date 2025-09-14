@@ -237,12 +237,12 @@
                     <div class="mb-3">
                         <h6 class="fw-bold">EditContext parameter missing</h6>
                         <p class="small text-muted mb-2">Place component inside EditForm:</p>
-                        <code class="small">&lt;EditForm Model="@@model"&gt;&lt;FluentValidationValidator /&gt;&lt;/EditForm&gt;</code>
+                        <code class="small">&lt;EditForm Model="@@model"&gt;&lt;FluentValidator /&gt;&lt;/EditForm&gt;</code>
                     </div>
                     <div>
                         <h6 class="fw-bold">Invalid form submits with AsyncMode</h6>
                         <p class="small text-muted mb-2">Use OnSubmit instead of OnValidSubmit with async validation:</p>
-                        <code class="small">&lt;EditForm OnSubmit="@@HandleSubmit"&gt;&lt;FluentValidationValidator AsyncMode="true" /&gt;&lt;/EditForm&gt;</code>
+                        <code class="small">&lt;EditForm OnSubmit="@@HandleSubmit"&gt;&lt;FluentValidator AsyncMode="true" /&gt;&lt;/EditForm&gt;</code>
                     </div>
                 </div>
             </div>
@@ -365,7 +365,7 @@ public class PersonValidator : AbstractValidator<Person>
 builder.Services.AddSingleton<IValidator<Person>, PersonValidator>();";
 
     private string codeExample3 = @"<EditForm Model=""@person"" OnValidSubmit=""@HandleValidSubmit"">
-    <FluentValidationValidator />
+    <FluentValidator />
 
     <div class=""mb-3"">
         <InputText @bind-Value=""person.FirstName"" class=""form-control"" />
@@ -377,7 +377,7 @@ builder.Services.AddSingleton<IValidator<Person>, PersonValidator>();";
 
     private string asyncValidationExample = @"<!-- Use OnSubmit instead of OnValidSubmit for async validation -->
 <EditForm Model=""@person"" OnSubmit=""@HandleSubmit"">
-    <FluentValidationValidator AsyncMode=""true"" />
+    <FluentValidator AsyncMode=""true"" />
 
     <div class=""mb-3"">
         <InputText @bind-Value=""person.EmailAddress"" class=""form-control"" />
@@ -434,10 +434,10 @@ RuleSet(""Update"", () => {
 });
 
 <!-- Execute only ""Create"" rule set -->
-<FluentValidationValidator RuleSets=""@(new[] { ""Create"" })"" />
+<FluentValidator RuleSets=""@(new[] { ""Create"" })"" />
 
 <!-- Execute all rules including rule sets -->
-<FluentValidationValidator AllRules=""true"" />";
+<FluentValidator AllRules=""true"" />";
 
     private string nestedObjectsExample = @"public class Person
 {

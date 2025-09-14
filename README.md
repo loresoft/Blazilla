@@ -123,7 +123,7 @@ await builder.Build().RunAsync();
 <h3>Person Form</h3>
 
 <EditForm Model="@person" OnValidSubmit="@HandleValidSubmit">
-    <FluentValidationValidator />
+    <FluentValidator />
     <ValidationSummary />
 
     <div class="mb-3">
@@ -174,7 +174,7 @@ Enable asynchronous validation mode and use `OnSubmit` instead of `OnValidSubmit
 
 ```razor
 <EditForm Model="@person" OnSubmit="@HandleSubmit">
-    <FluentValidationValidator AsyncMode="true" />
+    <FluentValidator AsyncMode="true" />
     <ValidationSummary />
     
     <div class="mb-3">
@@ -289,10 +289,10 @@ public class PersonValidator : AbstractValidator<Person>
 
 ```razor
 <!-- Execute only the "Create" rule set -->
-<FluentValidationValidator RuleSets="@(new[] { "Create" })" />
+<FluentValidator RuleSets="@(new[] { "Create" })" />
 
 <!-- Execute all rules including those in rule sets -->
-<FluentValidationValidator AllRules="true" />
+<FluentValidator AllRules="true" />
 ```
 
 ### Nested Object Validation
@@ -341,7 +341,7 @@ public class PersonValidator : AbstractValidator<Person>
 
 ```razor
 <EditForm Model="@person" OnValidSubmit="@HandleValidSubmit">
-    <FluentValidationValidator />
+    <FluentValidator />
     
     <!-- Person fields -->
     <InputText @bind-Value="person.FirstName" />
@@ -366,7 +366,7 @@ Pass a validator instance directly instead of using dependency injection:
 }
 
 <EditForm Model="@person" OnValidSubmit="@HandleValidSubmit">
-    <FluentValidationValidator Validator="@validator" />
+    <FluentValidator Validator="@validator" />
     <!-- form fields -->
 </EditForm>
 ```
@@ -377,7 +377,7 @@ Implement fine-grained control over which validation rules to execute:
 
 ```razor
 <EditForm Model="@person" OnValidSubmit="@HandleValidSubmit">
-    <FluentValidationValidator Selector="@customSelector" />
+    <FluentValidator Selector="@customSelector" />
     <!-- form fields -->
 </EditForm>
 
@@ -397,7 +397,7 @@ Implement fine-grained control over which validation rules to execute:
 
 ## Component Parameters
 
-The `FluentValidationValidator` component supports the following parameters:
+The `FluentValidator` component supports the following parameters:
 
 | Parameter   | Type                   | Default | Description                                                                                                                                                                                                                         |
 | ----------- | ---------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -461,7 +461,7 @@ The path conversion is performed internally using object tree analysis to match 
 
 When using validators with async rules (`MustAsync`, custom async validators), you must:
 
-- Enable `AsyncMode="true"` on the `FluentValidationValidator` component
+- Enable `AsyncMode="true"` on the `FluentValidator` component
 - Use `OnSubmit` instead of `OnValidSubmit`
 - Call `EditContextExtensions.ValidateAsync()` to ensure async validation completes
 
@@ -473,7 +473,7 @@ This limitation is a fundamental aspect of Blazor's validation architecture and 
 
 **No validator found error**
 
-No validator found for model type MyModel. To use FluentValidationValidator, register a validator for this model type or pass one directly to the Validator parameter.
+No validator found for model type MyModel. To use FluentValidator, register a validator for this model type or pass one directly to the Validator parameter.
 
 **Solution**: Ensure your validator is registered in the DI container:
 
@@ -483,13 +483,13 @@ builder.Services.AddSingleton<IValidator<MyModel>, MyModelValidator>();
 
 **EditContext parameter missing**
 
-FluentValidationValidator requires a cascading parameter of type EditContext.
+FluentValidator requires a cascading parameter of type EditContext.
 
 **Solution**: Ensure the component is placed inside an `EditForm`:
 
 ```razor
 <EditForm Model="@model">
-    <FluentValidationValidator />
+    <FluentValidator />
     <!-- form content -->
 </EditForm>
 ```
@@ -505,13 +505,13 @@ When using `AsyncMode="true"`, forms may submit even when async validation fails
 ```razor
 <!-- ❌ Incorrect - Don't use OnValidSubmit with async validation -->
 <EditForm Model="@model" OnValidSubmit="@HandleValidSubmit">
-    <FluentValidationValidator AsyncMode="true" />
+    <FluentValidator AsyncMode="true" />
     <!-- form fields -->
 </EditForm>
 
 <!-- ✅ Correct - Use OnSubmit with ValidateAsync -->
 <EditForm Model="@model" OnSubmit="@HandleSubmit">
-    <FluentValidationValidator AsyncMode="true" />
+    <FluentValidator AsyncMode="true" />
     <!-- form fields -->
 </EditForm>
 

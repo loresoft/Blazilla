@@ -3,7 +3,7 @@
 <h3>Overview</h3>
 <p>
     This example demonstrates advanced FluentValidation features in Blazor, specifically showcasing
-    <code>AsyncMode="true"</code> and <code>AllRules="true"</code> on the FluentValidationValidator component.
+    <code>AsyncMode="true"</code> and <code>AllRules="true"</code> on the FluentValidator component.
     The <strong>AsyncMode</strong> enables asynchronous validation rules (like email uniqueness checks),
     while <strong>AllRules</strong> ensures all validation rules are executed and displayed,
     not just the first failing rule per property.
@@ -14,7 +14,7 @@
 <EditForm Model="@person"
           OnSubmit="@HandleSubmit">
 
-    <FluentValidationValidator AsyncMode="true" AllRules="true" />
+    <FluentValidator AsyncMode="true" AllRules="true" />
 
     <div class="row">
         <div class="col-md-6">

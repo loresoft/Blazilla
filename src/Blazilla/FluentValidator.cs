@@ -18,7 +18,7 @@ namespace Blazilla;
 /// </summary>
 /// <remarks>
 /// <para>
-/// The <see cref="FluentValidationValidator"/> component must be placed inside an EditForm
+/// The <see cref="FluentValidator"/> component must be placed inside an EditForm
 /// and requires a cascading EditContext parameter. It can automatically resolve validators
 /// from the dependency injection container or accept a validator directly via the
 /// <see cref="Validator"/> parameter.
@@ -32,7 +32,7 @@ namespace Blazilla;
 /// <example>
 /// <code>
 /// &lt;EditForm Model="@model"&gt;
-///     &lt;FluentValidationValidator /&gt;
+///     &lt;FluentValidator /&gt;
 ///     &lt;ValidationSummary /&gt;
 ///
 ///     &lt;InputText @bind-Value="model.Name" /&gt;
@@ -42,7 +42,7 @@ namespace Blazilla;
 /// </example>
 /// <seealso cref="Microsoft.AspNetCore.Components.Forms.EditContext"/>
 /// <seealso cref="IValidator"/>
-public class FluentValidationValidator : ComponentBase, IDisposable
+public class FluentValidator : ComponentBase, IDisposable
 {
     /// <summary>
     /// The key used to store the pending validation task in the EditContext properties.
@@ -157,7 +157,7 @@ public class FluentValidationValidator : ComponentBase, IDisposable
         if (EditContext == null)
         {
             throw new InvalidOperationException(
-                $"{nameof(FluentValidationValidator)} requires a cascading parameter of type {nameof(EditContext)}.");
+                $"{nameof(FluentValidator)} requires a cascading parameter of type {nameof(EditContext)}.");
         }
 
         _currentContext = EditContext;
@@ -179,7 +179,7 @@ public class FluentValidationValidator : ComponentBase, IDisposable
         {
             throw new InvalidOperationException(
                 $"No validator found for model type {_modelType.FullName}. " +
-                $"To use {nameof(FluentValidationValidator)}, register a validator for this model type " +
+                $"To use {nameof(FluentValidator)}, register a validator for this model type " +
                 $"or pass one directly to the {nameof(Validator)} parameter.");
         }
     }
@@ -401,7 +401,7 @@ public class FluentValidationValidator : ComponentBase, IDisposable
     }
 
     /// <summary>
-    /// Releases all resources used by the <see cref="FluentValidationValidator"/> component.
+    /// Releases all resources used by the <see cref="FluentValidator"/> component.
     /// This includes clearing validation messages and unsubscribing from EditContext events.
     /// </summary>
     void IDisposable.Dispose()
