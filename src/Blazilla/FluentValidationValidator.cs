@@ -9,7 +9,7 @@ using FluentValidation.Results;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 
-namespace LoreSoft.Blazor.FluentValidation;
+namespace Blazilla;
 
 /// <summary>
 /// A component that integrates FluentValidation with form <see cref="Microsoft.AspNetCore.Components.Forms.EditContext"/>
@@ -316,9 +316,9 @@ public class FluentValidationValidator : ComponentBase, IDisposable
             return ValidatorOptions.Global.ValidatorSelectors.DefaultValidatorSelectorFactory();
 
         // use field selector only if fieldName is provided
-        if (fieldName != null)        
+        if (fieldName != null)
             return ValidatorOptions.Global.ValidatorSelectors.MemberNameValidatorSelectorFactory([fieldName]);
-        
+
         var selectors = new List<IValidatorSelector>();
 
         // custom selector always has highest priority

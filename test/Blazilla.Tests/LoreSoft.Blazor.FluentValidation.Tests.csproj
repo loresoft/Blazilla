@@ -24,7 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\samples\BlazorShared\BlazorShared.csproj" />
-    <ProjectReference Include="..\..\src\LoreSoft.Blazor.FluentValidation\LoreSoft.Blazor.FluentValidation.csproj" />
+    <ProjectReference Include="..\..\src\Blazilla\Blazilla.csproj" />
   </ItemGroup>
 
   <ItemGroup>

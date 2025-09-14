@@ -2,7 +2,7 @@ using FluentValidation.Results;
 
 using Microsoft.AspNetCore.Components.Forms;
 
-namespace LoreSoft.Blazor.FluentValidation;
+namespace Blazilla;
 
 /// <summary>
 /// Provides extension methods for the <see cref="EditContext"/> class to facilitate validation operations.
@@ -16,7 +16,7 @@ public static class EditContextExtensions
     /// <param name="editContext">The <see cref="EditContext"/> to validate.</param>
     /// <returns>
     /// A <see cref="Task{TResult}"/> that represents the asynchronous validation operation.
-    /// The task result is <see langword="true"/> if validation succeeded (no validation messages); 
+    /// The task result is <see langword="true"/> if validation succeeded (no validation messages);
     /// otherwise, <see langword="false"/>.
     /// </returns>
     /// <remarks>

@@ -2,7 +2,7 @@ using BlazorShared.Models;
 using BlazorShared.Pages;
 using BlazorShared.Validators;
 
-namespace LoreSoft.Blazor.FluentValidation.Tests;
+namespace Blazilla.Tests;
 
 public class PersonFormTests : TestContext
 {

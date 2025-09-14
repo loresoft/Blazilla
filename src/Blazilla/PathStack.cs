@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text;
 
-namespace LoreSoft.Blazor.FluentValidation;
+namespace Blazilla;
 
 /// <summary>
 /// Path stack structure used to compute object graph paths expressions

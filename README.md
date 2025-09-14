@@ -1,15 +1,15 @@
-# Blazor FluentValidation
+# Blazilla
 
 A library for using FluentValidation with Blazor
 
-[![Nuget version](https://img.shields.io/nuget/v/LoreSoft.Blazor.FluentValidation.svg?logo=nuget)](https://www.nuget.org/packages/LoreSoft.Blazor.FluentValidation/)
-[![Build Status](https://github.com/loresoft/LoreSoft.Blazor.FluentValidation/actions/workflows/dotnet.yml/badge.svg)](https://github.com/loresoft/LoreSoft.Blazor.FluentValidation/actions)
-[![Coverage Status](https://coveralls.io/repos/github/loresoft/LoreSoft.Blazor.FluentValidation/badge.svg?branch=main)](https://coveralls.io/github/loresoft/LoreSoft.Blazor.FluentValidation?branch=main)
-[![License](https://img.shields.io/github/license/loresoft/LoreSoft.Blazor.FluentValidation.svg)](LICENSE)
+[![Nuget version](https://img.shields.io/nuget/v/Blazilla.svg?logo=nuget)](https://www.nuget.org/packages/Blazilla/)
+[![Build Status](https://github.com/loresoft/Blazilla/actions/workflows/dotnet.yml/badge.svg)](https://github.com/loresoft/Blazilla/actions)
+[![Coverage Status](https://coveralls.io/repos/github/loresoft/Blazilla/badge.svg?branch=main)](https://coveralls.io/github/loresoft/Blazilla?branch=main)
+[![License](https://img.shields.io/github/license/loresoft/Blazilla.svg)](LICENSE)
 
 ## Overview
 
-LoreSoft.Blazor.FluentValidation provides seamless integration between [FluentValidation](https://fluentvalidation.net/) and Blazor's `EditForm` component. This library enables you to use FluentValidation's powerful and flexible validation rules with Blazor forms, supporting both Blazor Server and Blazor WebAssembly applications.
+Blazilla provides seamless integration between [FluentValidation](https://fluentvalidation.net/) and Blazor's `EditForm` component. This library enables you to use FluentValidation's powerful and flexible validation rules with Blazor forms, supporting both Blazor Server and Blazor WebAssembly applications.
 
 ## Features
 
@@ -27,13 +27,13 @@ LoreSoft.Blazor.FluentValidation provides seamless integration between [FluentVa
 Install the package via NuGet:
 
 ```bash
-dotnet add package LoreSoft.Blazor.FluentValidation
+dotnet add package Blazilla
 ```
 
 Or via Package Manager Console:
 
 ```bash
-Install-Package LoreSoft.Blazor.FluentValidation
+Install-Package Blazilla
 ```
 
 ## Quick Start

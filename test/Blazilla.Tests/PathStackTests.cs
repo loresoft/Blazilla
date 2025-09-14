@@ -1,4 +1,4 @@
-namespace LoreSoft.Blazor.FluentValidation.Tests;
+namespace Blazilla.Tests;
 
 public class PathStackTests
 {

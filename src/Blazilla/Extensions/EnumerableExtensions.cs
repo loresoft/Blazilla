@@ -1,6 +1,6 @@
 using System.Collections;
 
-namespace LoreSoft.Blazor.FluentValidation.Extensions;
+namespace Blazilla.Extensions;
 
 /// <summary>
 /// Provides extension methods for <see cref="IEnumerable"/> to support element access operations.

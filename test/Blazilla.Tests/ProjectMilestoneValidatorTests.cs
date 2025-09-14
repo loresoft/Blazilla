@@ -3,7 +3,7 @@ using BlazorShared.Validators;
 
 using FluentValidation.TestHelper;
 
-namespace LoreSoft.Blazor.FluentValidation.Tests;
+namespace Blazilla.Tests;
 
 public class ProjectMilestoneValidatorTests
 {

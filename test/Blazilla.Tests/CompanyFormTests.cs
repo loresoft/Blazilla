@@ -4,7 +4,7 @@ using BlazorShared.Validators;
 
 using Xunit.Abstractions;
 
-namespace LoreSoft.Blazor.FluentValidation.Tests;
+namespace Blazilla.Tests;
 
 public class CompanyFormTests : TestContext
 {

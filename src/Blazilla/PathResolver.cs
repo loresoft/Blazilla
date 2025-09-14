@@ -3,11 +3,11 @@ using System.Collections.Concurrent;
 using System.Globalization;
 using System.Reflection;
 
-using LoreSoft.Blazor.FluentValidation.Extensions;
+using Blazilla.Extensions;
 
 using Microsoft.AspNetCore.Components.Forms;
 
-namespace LoreSoft.Blazor.FluentValidation;
+namespace Blazilla;
 
 /// <summary>
 /// Provides functionality to resolve property paths within object graphs for validation purposes.

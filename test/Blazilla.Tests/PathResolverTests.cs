@@ -2,7 +2,7 @@ using BlazorShared.Models;
 
 using Microsoft.AspNetCore.Components.Forms;
 
-namespace LoreSoft.Blazor.FluentValidation.Tests;
+namespace Blazilla.Tests;
 
 public class PathResolverTests
 {

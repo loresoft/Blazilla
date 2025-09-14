@@ -6,7 +6,7 @@
             <div class="d-flex align-items-center mb-4">
                 <h1 class="display-4 me-3">
                     <i class="bi bi-check-circle-fill text-success me-2"></i>
-                    LoreSoft.Blazor.FluentValidation
+                    Blazilla
                 </h1>
             </div>
 
@@ -26,7 +26,7 @@
                     </h4>
                     <p class="card-text">Get up and running in minutes with our simple installation and setup process.</p>
                     <div class="bg-light p-3 rounded">
-                        <code class="text-dark">dotnet add package LoreSoft.Blazor.FluentValidation</code>
+                        <code class="text-dark">dotnet add package Blazilla</code>
                     </div>
                 </div>
             </div>
@@ -298,11 +298,11 @@
                     <h3 class="text-primary mb-3">
                         <i class="bi bi-heart-fill me-2"></i>Ready to Get Started?
                     </h3>
-                    <p class="lead mb-4">Try our interactive demo to see LoreSoft.Blazor.FluentValidation in action!</p>
+                    <p class="lead mb-4">Try our interactive demo to see Blazilla in action!</p>
                     <a href="./address" class="btn btn-primary btn-lg me-3">
                         <i class="bi bi-play-fill me-2"></i>Live Demo
                     </a>
-                    <a href="https://github.com/loresoft/LoreSoft.Blazor.FluentValidation" class="btn btn-outline-primary btn-lg" target="_blank">
+                    <a href="https://github.com/loresoft/Blazilla" class="btn btn-outline-primary btn-lg" target="_blank">
                         <i class="bi bi-github me-2"></i>View on GitHub
                     </a>
                 </div>
@@ -378,12 +378,12 @@ builder.Services.AddSingleton<IValidator<Person>, PersonValidator>();";
     private string asyncValidationExample = @"<!-- Use OnSubmit instead of OnValidSubmit for async validation -->
 <EditForm Model=""@person"" OnSubmit=""@HandleSubmit"">
     <FluentValidationValidator AsyncMode=""true"" />
-    
+
     <div class=""mb-3"">
         <InputText @bind-Value=""person.EmailAddress"" class=""form-control"" />
         <ValidationMessage For=""@(() => person.EmailAddress)"" />
     </div>
-    
+
     <button type=""submit"" class=""btn btn-primary"" disabled=""@isSubmitting"">
         @(isSubmitting ? ""Validating..."" : ""Submit"")
     </button>
@@ -396,12 +396,12 @@ builder.Services.AddSingleton<IValidator<Person>, PersonValidator>();";
     {
         isSubmitting = true;
         StateHasChanged();
-        
+
         try
         {
             // Use ValidateAsync to ensure all async validation completes
             var isValid = await editContext.ValidateAsync();
-            
+
             if (isValid)
             {
                 // Form is valid, proceed with submission
@@ -450,7 +450,7 @@ public class PersonValidator : AbstractValidator<Person>
     public PersonValidator()
     {
         RuleFor(p => p.FirstName).NotEmpty();
-        
+
         // Validate nested Address object
         RuleFor(p => p.Address!)
             .SetValidator(new AddressValidator())

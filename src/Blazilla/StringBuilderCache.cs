@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace LoreSoft.Blazor.FluentValidation;
+namespace Blazilla;
 
 /// <summary>Provide a cached reusable instance of StringBuilder per thread.</summary>
 internal static class StringBuilderCache

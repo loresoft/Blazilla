@@ -1,4 +1,4 @@
-namespace LoreSoft.Blazor.FluentValidation;
+namespace Blazilla;
 
 /// <summary>
 /// Represents a component of an object graph path expression with metadata about its type and formatting.

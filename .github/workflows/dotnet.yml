@@ -57,7 +57,7 @@ jobs:
         uses: SteveSandersonMS/ghaction-rewrite-base-href@v1.1.0
         with:
           html_path: ${{env.BUILD_PATH}}/sample/wwwroot/index.html
-          base_href: /LoreSoft.Blazor.FluentValidation/
+          base_href: /Blazilla/
 
       - name: Upload Packages
         if: success() && github.event_name != 'pull_request'

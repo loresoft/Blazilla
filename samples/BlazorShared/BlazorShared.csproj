@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\LoreSoft.Blazor.FluentValidation\LoreSoft.Blazor.FluentValidation.csproj" />
+    <ProjectReference Include="..\..\src\Blazilla\Blazilla.csproj" />
   </ItemGroup>
 
 </Project>
