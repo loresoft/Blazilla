@@ -44,12 +44,16 @@ public static class EnumerableExtensions
     /// </remarks>
     public static object? ElementAtOrDefault(this IEnumerable source, int index)
     {
-        if (source == null || index < 0)
-            return default;
+        if (source is null || index < 0)
+            return null;
+
+        // Optimization: Check if source is an array for fastest index access
+        if (source is Array array)
+            return index < array.Length ? array.GetValue(index) : null;
 
         // Optimization: Check if source implements IList for direct index access
         if (source is IList list)
-            return index < list.Count ? list[index] : default;
+            return index < list.Count ? list[index] : null;
 
         // Fallback to enumeration for other IEnumerable implementations
         int currentIndex = 0;
@@ -61,6 +65,6 @@ public static class EnumerableExtensions
             currentIndex++;
         }
 
-        return default;
+        return null;
     }
 }
