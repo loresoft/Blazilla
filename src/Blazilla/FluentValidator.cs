@@ -8,6 +8,7 @@ using FluentValidation.Results;
 
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.Extensions.Logging;
 
 namespace Blazilla;
 
@@ -65,6 +66,13 @@ public class FluentValidator : ComponentBase, IDisposable
     /// </summary>
     [Inject]
     protected IServiceProvider ServiceProvider { get; set; } = default!;
+
+    /// <summary>
+    /// Gets or sets the logger used for logging validation events.
+    /// This property is automatically injected by the Blazor framework.
+    /// </summary>
+    [Inject]
+    protected ILogger<FluentValidator> Logger { get; set; } = default!;
 
     /// <summary>
     /// Gets or sets the EditContext that provides the validation context for the form.
@@ -177,10 +185,10 @@ public class FluentValidator : ComponentBase, IDisposable
 
         if (_currentValidator == null)
         {
-            throw new InvalidOperationException(
-                $"No validator found for model type {_modelType.FullName}. " +
-                $"To use {nameof(FluentValidator)}, register a validator for this model type " +
-                $"or pass one directly to the {nameof(Validator)} parameter.");
+            Logger.LogWarning(
+                "No validator found for model type {ModelType}. To use FluentValidator, register a validator for this model type or pass one directly to the Validator parameter.",
+                _modelType.FullName
+            );
         }
     }
 
