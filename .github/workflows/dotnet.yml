@@ -1,6 +1,6 @@
 name: Build
 permissions:
-  contents: read
+  contents: write
 
 env:
   DOTNET_NOLOGO: true
