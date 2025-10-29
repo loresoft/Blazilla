@@ -1,6 +1,4 @@
 name: Build
-permissions:
-  contents: write
 
 env:
   DOTNET_NOLOGO: true
@@ -25,6 +23,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      actions: read
+      checks: write
 
     steps:
       - name: Checkout
@@ -86,6 +89,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: success() && github.event_name != 'pull_request'
+
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Download Artifact
