@@ -339,7 +339,7 @@ public class PathResolver
         {
             return t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                     .Where(p => p.CanRead)
-                    .ToDictionary(p => p.Name, StringComparer.Ordinal);
+                    .ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
         });
     }
 

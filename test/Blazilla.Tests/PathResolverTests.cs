@@ -926,4 +926,69 @@ public class PathResolverTests
         result.Value.FieldName.Should().Be("1");
         result.Value.Model.Should().Be(settings.AllowedEmailDomains);
     }
+
+    #region Case Insensitive Path Tests
+
+    [Fact]
+    public void FindField_WithLowercasePropertyName_ReturnsCorrectFieldIdentifier()
+    {
+        // Arrange
+        var person = new Person { FirstName = "John" };
+
+        // Act - Using lowercase "firstname" instead of "FirstName"
+        var result = PathResolver.FindField(person, "firstname");
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Value.FieldName.Should().Be("FirstName");
+        result.Value.Model.Should().Be(person);
+    }
+
+
+    [Fact]
+    public void FindField_WithCaseInsensitiveNestedPath_ReturnsCorrectFieldIdentifier()
+    {
+        // Arrange
+        var address = new Address { City = "New York" };
+        var person = new Person { Address = address };
+
+        // Act - Using lowercase path "address.city" instead of "Address.City"
+        var result = PathResolver.FindField(person, "address.city");
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Value.FieldName.Should().Be("City");
+        result.Value.Model.Should().Be(address);
+    }
+
+    [Fact]
+    public void FindField_WithCaseInsensitiveCollectionPath_ReturnsCorrectFieldIdentifier()
+    {
+        // Arrange
+        var employee = new Employee { FirstName = "John", Id = 1 };
+        var company = new Company { Employees = { employee } };
+
+        // Act - Using mixed case "employees[0].firstname" instead of "Employees[0].FirstName"
+        var result = PathResolver.FindField(company, "employees[0].firstname");
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Value.FieldName.Should().Be("FirstName");
+        result.Value.Model.Should().Be(employee);
+    }
+
+    [Fact]
+    public void FindField_WithCaseInsensitiveNonExistentProperty_ReturnsNull()
+    {
+        // Arrange
+        var person = new Person { FirstName = "John" };
+
+        // Act - Using case-insensitive path with non-existent property
+        var result = PathResolver.FindField(person, "nonexistentproperty");
+
+        // Assert
+        result.Should().BeNull();
+    }
+
+    #endregion
 }
