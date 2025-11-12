@@ -2,11 +2,9 @@ using BlazorShared.Models;
 using BlazorShared.Pages;
 using BlazorShared.Validators;
 
-using Xunit.Abstractions;
-
 namespace Blazilla.Tests;
 
-public class CompanyFormTests : TestContext
+public class CompanyFormTests : BunitContext
 {
     private readonly ITestOutputHelper _outputHelper;
 
@@ -28,7 +26,7 @@ public class CompanyFormTests : TestContext
     public void CompanyForm_ShowsValidationMessages_WhenSubmittedWithEmptyRequiredFields()
     {
         // Arrange
-        var component = RenderComponent<CompanyForm>();
+        var component = Render<CompanyForm>();
         var form = component.Find("form");
 
         // Act - Submit empty form
@@ -60,7 +58,7 @@ public class CompanyFormTests : TestContext
     public void CompanyForm_ValidatesCompanyBasicFields()
     {
         // Arrange
-        var component = RenderComponent<CompanyForm>();
+        var component = Render<CompanyForm>();
 
         // Act - Fill only company name
         component.Find("#companyName").Change("Test Company");
@@ -81,7 +79,7 @@ public class CompanyFormTests : TestContext
     public void CompanyForm_ValidatesRegistrationNumberFormat()
     {
         // Arrange
-        var component = RenderComponent<CompanyForm>();
+        var component = Render<CompanyForm>();
 
         // Act - Enter invalid registration number format
         component.Find("#companyName").Change("Test Company");
@@ -101,7 +99,7 @@ public class CompanyFormTests : TestContext
     public void CompanyForm_ValidatesAddressFields()
     {
         // Arrange
-        var component = RenderComponent<CompanyForm>();
+        var component = Render<CompanyForm>();
 
         // Act - Fill company fields but leave address incomplete
         component.Find("#companyName").Change("Test Company");
@@ -127,7 +125,7 @@ public class CompanyFormTests : TestContext
     public void CompanyForm_ValidatesDepartmentFields()
     {
         // Arrange
-        var component = RenderComponent<CompanyForm>();
+        var component = Render<CompanyForm>();
 
         // Act - Fill company and address fields, but leave department name empty
         FillBasicCompanyData(component);
@@ -147,7 +145,7 @@ public class CompanyFormTests : TestContext
     public void CompanyForm_ValidatesProjectFields()
     {
         // Arrange
-        var component = RenderComponent<CompanyForm>();
+        var component = Render<CompanyForm>();
 
         // Act - Fill other data but leave project fields empty
         FillBasicCompanyData(component);
@@ -167,7 +165,7 @@ public class CompanyFormTests : TestContext
     public void CompanyForm_ValidationTriggeredOnFieldChange()
     {
         // Arrange
-        var component = RenderComponent<CompanyForm>();
+        var component = Render<CompanyForm>();
 
         // Act - Change company name field and blur
         component.Find("#companyName").Change("");
@@ -183,7 +181,7 @@ public class CompanyFormTests : TestContext
     public void CompanyForm_ValidRegistrationNumberFormatPasses()
     {
         // Arrange
-        var component = RenderComponent<CompanyForm>();
+        var component = Render<CompanyForm>();
 
         // Act - Enter valid registration number format
         component.Find("#companyName").Change("Test Company");

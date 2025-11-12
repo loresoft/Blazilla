@@ -4,7 +4,7 @@ using BlazorShared.Validators;
 
 namespace Blazilla.Tests;
 
-public class PersonFormTests : TestContext
+public class PersonFormTests : BunitContext
 {
     public PersonFormTests()
     {
@@ -17,7 +17,7 @@ public class PersonFormTests : TestContext
     public void PersonForm_ShowsValidationMessages_WhenSubmittedWithEmptyRequiredFields()
     {
         // Arrange
-        var component = RenderComponent<PersonForm>();
+        var component = Render<PersonForm>();
         var form = component.Find("form");
 
         // Act - Submit empty form
@@ -45,7 +45,7 @@ public class PersonFormTests : TestContext
     public void PersonForm_DoesNotShowValidationMessages_WhenValidDataIsEntered()
     {
         // Arrange
-        var component = RenderComponent<PersonForm>();
+        var component = Render<PersonForm>();
 
         // Act - Fill in valid data
         component.Find("#firstName").Change("John");
@@ -76,7 +76,7 @@ public class PersonFormTests : TestContext
     public void PersonForm_ValidationTriggeredOnFieldChange()
     {
         // Arrange
-        var component = RenderComponent<PersonForm>();
+        var component = Render<PersonForm>();
 
         // Act - Focus and blur without entering data for first name
         component.Find("#firstName").Change("");
@@ -102,7 +102,7 @@ public class PersonFormTests : TestContext
     public void PersonForm_ValidationTriggeredOnNestedChange()
     {
         // Arrange
-        var component = RenderComponent<PersonForm>();
+        var component = Render<PersonForm>();
 
         // Act - Focus and blur without entering data for first name
         component.Find("#addressLine1").Change("");
@@ -128,7 +128,7 @@ public class PersonFormTests : TestContext
     public void PersonForm_PartialDataValidation_ShowsAppropriateErrors()
     {
         // Arrange
-        var component = RenderComponent<PersonForm>();
+        var component = Render<PersonForm>();
 
         // Act - Fill only some required fields
         component.Find("#firstName").Change("John");
@@ -162,7 +162,7 @@ public class PersonFormTests : TestContext
     public void PersonForm_OptionalFields_DoNotShowValidationErrors()
     {
         // Arrange
-        var component = RenderComponent<PersonForm>();
+        var component = Render<PersonForm>();
 
         // Act - Fill only required fields, leave optional fields empty
         component.Find("#firstName").Change("John");
@@ -197,7 +197,7 @@ public class PersonFormTests : TestContext
     public void PersonForm_ShowsEmailValidationError_ForInvalidEmail()
     {
         // Arrange
-        var component = RenderComponent<PersonForm>();
+        var component = Render<PersonForm>();
 
         // Act - Fill in data with invalid email
         component.Find("#firstName").Change("John");
@@ -223,7 +223,7 @@ public class PersonFormTests : TestContext
     public void PersonForm_ShowsUniqueEmailValidationError_ForDuplicateEmail()
     {
         // Arrange
-        var component = RenderComponent<PersonForm>();
+        var component = Render<PersonForm>();
 
         // Act - Fill in data with duplicate email
         component.Find("#firstName").Change("John");

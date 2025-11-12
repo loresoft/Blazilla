@@ -4,7 +4,7 @@ using BlazorShared.Validators;
 
 namespace Blazilla.Tests;
 
-public class AddressFormTests : TestContext
+public class AddressFormTests : BunitContext
 {
     public AddressFormTests()
     {
@@ -16,7 +16,7 @@ public class AddressFormTests : TestContext
     public void AddressForm_ShowsValidationMessages_WhenSubmittedWithEmptyRequiredFields()
     {
         // Arrange
-        var component = RenderComponent<AddressForm>();
+        var component = Render<AddressForm>();
         var form = component.Find("form");
 
         // Act - Submit empty form
@@ -39,7 +39,7 @@ public class AddressFormTests : TestContext
     public void AddressForm_DoesNotShowValidationMessages_WhenValidDataIsEntered()
     {
         // Arrange
-        var component = RenderComponent<AddressForm>();
+        var component = Render<AddressForm>();
 
         // Act - Fill in valid data
         component.Find("#addressLine1").Change("123 Main Street");
@@ -65,7 +65,7 @@ public class AddressFormTests : TestContext
     public void AddressForm_SubmitsSuccessfully_WithValidData()
     {
         // Arrange
-        var component = RenderComponent<AddressForm>();
+        var component = Render<AddressForm>();
 
         // Act - Fill in valid data
         component.Find("#addressLine1").Change("123 Main Street");
@@ -92,7 +92,7 @@ public class AddressFormTests : TestContext
     public void AddressForm_ValidationTriggeredOnFieldChange()
     {
         // Arrange
-        var component = RenderComponent<AddressForm>();
+        var component = Render<AddressForm>();
         var addressLine1Input = component.Find("#addressLine1");
 
         // Act - Focus and blur without entering data
@@ -113,7 +113,7 @@ public class AddressFormTests : TestContext
     public void AddressForm_PartialDataValidation_ShowsAppropriateErrors()
     {
         // Arrange
-        var component = RenderComponent<AddressForm>();
+        var component = Render<AddressForm>();
 
         // Act - Fill only some required fields
         component.Find("#addressLine1").Change("123 Main Street");
@@ -137,7 +137,7 @@ public class AddressFormTests : TestContext
     public void AddressForm_OptionalFields_DoNotShowValidationErrors()
     {
         // Arrange
-        var component = RenderComponent<AddressForm>();
+        var component = Render<AddressForm>();
 
         // Act - Fill only required fields, leave optional fields empty
         component.Find("#addressLine1").Change("123 Main Street");
