@@ -11,7 +11,7 @@
     <PackageVersion Include="Bunit" Version="2.1.1" />
     <PackageVersion Include="coverlet.collector" Version="6.0.4" />
     <PackageVersion Include="FluentValidation" Version="12.1.0" />
-    <PackageVersion Include="Meziantou.Analyzer" Version="2.0.254" />
+    <PackageVersion Include="Meziantou.Analyzer" Version="2.0.256" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.Web" Version="10.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.0" />
