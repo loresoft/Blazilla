@@ -262,25 +262,36 @@ public class FluentValidator : ComponentBase, IDisposable
         if (context == null)
             return;
 
-        ValidationResult? validationResults;
-
         if (AsyncMode)
         {
+            // wrap the entire validation workflow in a task to prevent race conditions
+            // the pending task must complete both validation AND applying results before
+            // EditContextExtensions.ValidateAsync() can safely check for validation messages
+            var task = _currentValidator
+                .ValidateAsync(context)
+                .ContinueWith(async validationTask =>
+                {
+                    ValidationResult? validationResults = await validationTask.ConfigureAwait(false);
+
+                    // update messages for all fields
+                    ApplyValidationResults(validationResults);
+                })
+                .Unwrap();
+
             // store pending task in EditContext properties so it can be awaited if needed
             // used in EditContextExtensions.ValidateAsync() to prevent premature form submission
-            var task = _currentValidator.ValidateAsync(context);
             _currentContext.Properties[PendingTask] = task;
 
-            // continue validation so message store is updated when task completes
-            validationResults = await task.ConfigureAwait(false);
+            // await the task so message store is updated when task completes
+            await task.ConfigureAwait(false);
         }
         else
         {
-            validationResults = _currentValidator.Validate(context);
-        }
+            ValidationResult? validationResults = _currentValidator.Validate(context);
 
-        // update messages for all fields
-        ApplyValidationResults(validationResults);
+            // update messages for all fields
+            ApplyValidationResults(validationResults);
+        }
 
         // notify on UI thread
         _ = InvokeAsync(_currentContext.NotifyValidationStateChanged);
