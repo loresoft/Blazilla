@@ -45,7 +45,7 @@ public static class EditContextExtensions
 
         // check for any pending async validation task
         if (editContext.Properties.TryGetValue(FluentValidator.PendingTask, out var pendingTask)
-            && pendingTask is Task<ValidationResult> task)
+            && pendingTask is Task task)
         {
             // await the async validation task to complete, pending task will update the message store when done
             await task.ConfigureAwait(false);
