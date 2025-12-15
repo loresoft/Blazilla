@@ -29,6 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
     <Using Include="AwesomeAssertions" />
     <Using Include="Bunit" />
     <Using Include="Bunit.TestDoubles" />
