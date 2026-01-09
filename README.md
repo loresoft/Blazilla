@@ -467,6 +467,241 @@ When using validators with async rules (`MustAsync`, custom async validators), y
 
 This limitation is a fundamental aspect of Blazor's validation architecture and affects all validation libraries, not just FluentValidation integrations.
 
+## Migration Guide from Blazored.FluentValidation
+
+If you're currently using [Blazored.FluentValidation](https://github.com/Blazored/FluentValidation), migrating to Blazilla is straightforward. The libraries share similar APIs and functionality, with some key improvements in Blazilla.
+
+### Key Differences
+
+| Feature                   | Blazored.FluentValidation                         | Blazilla                                           |
+| ------------------------- | ------------------------------------------------- | -------------------------------------------------- |
+| Component Name            | `<FluentValidationValidator />`                   | `<FluentValidator />`                              |
+| Validator Discovery       | Automatic assembly scanning, DI, or explicit pass | Requires DI registration or explicit pass          |
+| Async Validation Support  | Limited, requires workarounds                     | Built-in with `AsyncMode` parameter                |
+| Nested Object Validation  | Limited (doesn't support all scenarios)           | Fully supported with improved path resolution      |
+| Rule Sets                 | Supported via `RuleSet` parameter                 | Supported via `RuleSets` and `AllRules` parameters |
+| Custom Validator Selector | Not supported                                     | Supported via `Selector` parameter                 |
+| Performance               | Poor, degrades with nested objects                | High, optimized with compiled expression trees     |
+| DI Registration Required  | No (automatic assembly scanning fallback)         | Yes (or pass via `Validator` parameter)            |
+
+### Migration Steps
+
+#### 1. Update Package References
+
+Remove the Blazored.FluentValidation package:
+
+```bash
+dotnet remove package Blazored.FluentValidation
+```
+
+Add Blazilla:
+
+```bash
+dotnet add package Blazilla
+```
+
+#### 2. Update Using Statements
+
+Replace:
+
+```csharp
+using Blazored.FluentValidation;
+```
+
+With:
+
+```csharp
+using Blazilla;
+```
+
+#### 3. Update Component Names
+
+Replace the component name in your Razor files:
+
+**Before (Blazored.FluentValidation):**
+
+```razor
+<EditForm Model="@model" OnValidSubmit="@HandleValidSubmit">
+    <FluentValidationValidator />
+    <ValidationSummary />
+    <!-- form fields -->
+</EditForm>
+```
+
+**After (Blazilla):**
+
+```razor
+<EditForm Model="@model" OnValidSubmit="@HandleValidSubmit">
+    <FluentValidator />
+    <ValidationSummary />
+    <!-- form fields -->
+</EditForm>
+```
+
+#### 4. Update Rule Set Parameters
+
+If you're using rule sets, update the parameter name:
+
+**Before:**
+
+```razor
+<FluentValidationValidator RuleSet="Create,Update" />
+```
+
+**After:**
+
+```razor
+<FluentValidator RuleSets="@(new[] { "Create", "Update" })" />
+```
+
+Or use the newer pattern for executing all rules:
+
+```razor
+<FluentValidator AllRules="true" />
+```
+
+#### 5. Update Async Validation
+
+Blazilla has improved async validation support. Update your components:
+
+**Before (Blazored.FluentValidation - required manual handling):**
+
+```razor
+<EditForm Model="@model" OnValidSubmit="@HandleValidSubmit">
+    <FluentValidationValidator @ref="validator" />
+    <!-- form fields -->
+    <button type="submit" disabled="@isValidating">Submit</button>
+</EditForm>
+
+@code {
+    private FluentValidationValidator? validator;
+    private bool isValidating;
+
+    private async Task HandleValidSubmit()
+    {
+        // Manual async validation handling
+        if (validator != null)
+        {
+            isValidating = true;
+            await Task.Delay(100); // Wait for async validation
+            isValidating = false;
+        }
+        // Process form
+    }
+}
+```
+
+**After (Blazilla - built-in support):**
+
+```razor
+<EditForm Model="@model" OnSubmit="@HandleSubmit">
+    <FluentValidator AsyncMode="true" />
+    <!-- form fields -->
+    <button type="submit" disabled="@isSubmitting">Submit</button>
+</EditForm>
+
+@code {
+    private bool isSubmitting;
+
+    private async Task HandleSubmit(EditContext editContext)
+    {
+        isSubmitting = true;
+        
+        try
+        {
+            // Built-in async validation handling
+            var isValid = await editContext.ValidateAsync();
+            
+            if (isValid)
+            {
+                // Process form
+                await ProcessForm();
+            }
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}
+```
+
+#### 6. Register Validators in Dependency Injection
+
+**Important Change**: Blazored.FluentValidation automatically scans assemblies to find validators - no setup required. Blazilla requires validators to be either registered in DI or passed via the `Validator` parameter.
+
+**Before (Blazored.FluentValidation - automatic assembly scanning):**
+
+```csharp
+// No registration needed - Blazored.FluentValidation automatically
+// scans assemblies and finds validators at runtime
+```
+
+**After (Blazilla - explicit registration required):**
+
+```csharp
+// Manual registration (simple but tedious for many validators)
+builder.Services.AddSingleton<IValidator<Person>, PersonValidator>();
+builder.Services.AddSingleton<IValidator<Company>, CompanyValidator>();
+builder.Services.AddSingleton<IValidator<Address>, AddressValidator>();
+// ... register all validators used in your application
+```
+
+**Registration Options:**
+
+To simplify registration of multiple validators, you can use one of these approaches:
+
+**Option 1: FluentValidation's Automatic Registration**
+
+```csharp
+// Install: dotnet add package FluentValidation.DependencyInjectionExtensions
+// Scans assembly and registers all validators
+services.AddValidatorsFromAssemblyContaining<PersonValidator>();
+```
+
+**Option 2: Scrutor for Assembly Scanning**
+
+```csharp
+// Install: dotnet add package Scrutor
+services.Scan(scan => scan
+    .FromAssemblyOf<PersonValidator>()
+    .AddClasses(classes => classes.AssignableTo(typeof(IValidator<>)))
+    .AsImplementedInterfaces()
+    .WithSingletonLifetime());
+```
+
+**Option 3: Injectio for Attribute-Based Registration**
+
+```csharp
+// Install: dotnet add package Injectio
+// Add attribute to each validator class
+[RegisterSingleton<IValidator<Person>>]
+public class PersonValidator : AbstractValidator<Person>
+{
+    // validator implementation
+}
+```
+
+**Option 4: Pass Validators Directly**
+
+```razor
+// No DI registration needed - pass validator instance to component
+<FluentValidator Validator="@(new PersonValidator())" />
+```
+
+> **Note**: Use singleton lifetime since validators are stateless and thread-safe. Options 1-3 simplify registration when you have many validators.
+
+#### 7. Handle Breaking Changes
+
+**No Automatic Assembly Scanning**: This is the biggest breaking change. Blazored.FluentValidation automatically scans assemblies at runtime to discover and use validators without any configuration. Blazilla does not support automatic assembly scanning - you must explicitly provide validators.
+
+You have two options with Blazilla:
+
+- **Option 1 (Recommended)**: Register each validator in the DI container
+- **Option 2**: Pass validators directly via the `Validator` parameter on each component
+
+If you have many validators, you'll need to add DI registrations for each one in your `Program.cs`.
+
 ## Troubleshooting
 
 ### Common Issues
