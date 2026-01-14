@@ -50,6 +50,11 @@ public class FluentValidator : ComponentBase, IDisposable
     /// </summary>
     public const string PendingTask = "__FluentValidation_Task";
 
+    /// <summary>
+    /// The key used to store the rule sets to apply in the EditContext properties.
+    /// </summary>
+    public const string RuleSetProperty = "__FluentValidation_RuleSet";
+
     private static readonly ConcurrentDictionary<Type, Func<object, PropertyChain?, IValidatorSelector, IValidationContext>> _contextFactoryCache = new();
     private static readonly ConcurrentDictionary<Type, Type> _validatorTypeCache = new();
 
@@ -345,7 +350,15 @@ public class FluentValidator : ComponentBase, IDisposable
             selectors.Add(Selector);
 
         // rule-set selector has lowest priority
-        if (AllRules)
+        object? ruleSetProperty = null;
+        EditContext?.Properties.TryGetValue(RuleSetProperty, out ruleSetProperty);
+
+        if (ruleSetProperty is IEnumerable<string> ruleSets)
+        {
+            var paramSelector = ValidatorOptions.Global.ValidatorSelectors.RulesetValidatorSelectorFactory(ruleSets);
+            selectors.Add(paramSelector);
+        }
+        else if (AllRules)
         {
             var allSelector = ValidatorOptions.Global.ValidatorSelectors.RulesetValidatorSelectorFactory([RulesetValidatorSelector.WildcardRuleSetName]);
             selectors.Add(allSelector);

@@ -207,10 +207,10 @@
 
     private async Task HandleSubmit(EditContext editContext)
     {
-		// support async validation
-		var valid = await editContext.ValidateAsync();
+        // support async validation
+        var valid = await editContext.ValidateAsync();
 
-		isSubmitted = valid;
+        isSubmitted = valid;
     }
 
     private void ResetForm()
