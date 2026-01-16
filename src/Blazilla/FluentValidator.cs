@@ -390,14 +390,10 @@ public class FluentValidator : ComponentBase, IDisposable
     /// name="ruleSetProperty"/>; otherwise, false.</returns>
     private bool HasAnyRuleSets(object? ruleSetProperty = null)
     {
-        var hasAnyRuleSet = RuleSets?.Any() ?? false;
+        if (RuleSets?.Any() == true)
+            return true;
 
-        if (ruleSetProperty is IEnumerable<string> ruleSets)
-        {
-            return hasAnyRuleSet || ruleSets.Any();
-        }
-
-        return hasAnyRuleSet;
+        return ruleSetProperty is IEnumerable<string> ruleSets && ruleSets.Any();
     }
 
     /// <summary>
