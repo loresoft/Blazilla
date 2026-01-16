@@ -335,8 +335,11 @@ public class FluentValidator : ComponentBase, IDisposable
     /// </remarks>
     private IValidatorSelector CreateSelector(string? fieldName)
     {
+        object? ruleSetProperty = null;
+        EditContext?.Properties.TryGetValue(RuleSetProperty, out ruleSetProperty);
+
         // if nothing is specified, use the default selector
-        if (Selector == null && fieldName == null && !AllRules && RuleSets?.Any() != true)
+        if (Selector == null && fieldName == null && !AllRules && !HasAnyRuleSets(ruleSetProperty))
             return ValidatorOptions.Global.ValidatorSelectors.DefaultValidatorSelectorFactory();
 
         // use field selector only if fieldName is provided
@@ -350,9 +353,6 @@ public class FluentValidator : ComponentBase, IDisposable
             selectors.Add(Selector);
 
         // rule-set selector has lowest priority
-        object? ruleSetProperty = null;
-        EditContext?.Properties.TryGetValue(RuleSetProperty, out ruleSetProperty);
-
         if (ruleSetProperty is IEnumerable<string> ruleSets)
         {
             var paramSelector = ValidatorOptions.Global.ValidatorSelectors.RulesetValidatorSelectorFactory(ruleSets);
@@ -379,6 +379,25 @@ public class FluentValidator : ComponentBase, IDisposable
 
         // combine all selectors into one
         return ValidatorOptions.Global.ValidatorSelectors.CompositeValidatorSelectorFactory(selectors);
+    }
+
+    /// <summary>
+    /// Determines whether any rule sets are defined either in the current instance or provided as an argument.
+    /// </summary>
+    /// <param name="ruleSetProperty">An optional object that, if it is an <see cref="IEnumerable{String}"/>, is checked for the presence of rule set
+    /// names. If <see langword="null"/>, only the current instance is considered.</param>
+    /// <returns>true if at least one rule set exists in the current instance or in the provided <paramref
+    /// name="ruleSetProperty"/>; otherwise, false.</returns>
+    private bool HasAnyRuleSets(object? ruleSetProperty = null)
+    {
+        var hasAnyRuleSet = RuleSets?.Any() ?? false;
+
+        if (ruleSetProperty is IEnumerable<string> ruleSets)
+        {
+            return hasAnyRuleSet || ruleSets.Any();
+        }
+
+        return hasAnyRuleSet;
     }
 
     /// <summary>
