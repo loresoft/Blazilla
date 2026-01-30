@@ -357,6 +357,7 @@ public class PathResolver
                type.IsEnum ||
                type == typeof(string) ||
                type == typeof(Uri) ||
+               type == typeof(Type) ||
                (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>));
     }
 }
