@@ -449,6 +449,70 @@ The library automatically converts Blazor's `FieldIdentifier` objects to FluentV
 
 The path conversion is performed internally using object tree analysis to match Blazor's field identification system with FluentValidation's property path conventions. This ensures that validation messages from FluentValidation rules are correctly associated with the corresponding Blazor input components.
 
+### Customizing Path Resolution Type Traversal
+
+The `PathResolver` automatically traverses your object graph to find the correct property path for validation messages. By default, it skips certain types that shouldn't be traversed:
+
+- Primitive types (`int`, `bool`, `double`, etc.)
+- Value types and enums
+- Common immutable types (`string`, `Uri`, `Type`)
+- Blazor components (any type implementing `IComponent`)
+
+#### Why Skip Types During Traversal?
+
+Skipping certain types during path resolution is important for several reasons:
+
+1. **Performance**: Prevents unnecessary traversal of large component trees or complex framework objects that don't contain validation targets
+2. **Correctness**: Avoids traversing into framework types that contain circular references or shouldn't be part of validation paths
+3. **Stability**: Prevents potential errors from attempting to traverse types with non-standard property access patterns or properties that throw exceptions
+
+#### Adding Custom Ignored Types
+
+For custom scenarios where you need to skip additional types during path resolution, use the `PathResolver.AddIgnoredType` method. This is useful when you have:
+
+- Custom component base classes that should be treated like `IComponent`
+- Third-party UI framework types that shouldn't be traversed
+- Types with complex internal structures or circular references
+- Types with properties that throw exceptions when accessed
+
+**Example Usage:**
+
+```csharp
+// In Program.cs during application startup
+using Blazilla;
+
+// Add a single type to ignore
+PathResolver.AddIgnoredType(typeof(MyCustomComponent));
+
+// Add multiple types at once (more efficient - rebuilds the internal collection only once)
+PathResolver.AddIgnoredType(
+    typeof(MyCustomComponent),
+    typeof(MyFrameworkType),
+    typeof(IMyCustomInterface));  // Interface types - any implementing type will be ignored
+```
+
+**Real-World Scenario:**
+
+```csharp
+// Custom component base class used throughout your application
+public abstract class CustomComponentBase : ComponentBase
+{
+    // Component infrastructure
+    public RenderFragment? ChildContent { get; set; }
+    // ... other component properties
+}
+
+// During startup, register it to be ignored during path resolution
+PathResolver.AddIgnoredType(typeof(CustomComponentBase));
+
+// Now any type inheriting from CustomComponentBase will be skipped during traversal,
+// preventing unnecessary performance overhead and potential traversal into component internals
+```
+
+**Performance Tip**: When adding multiple types, pass them all in a single call to `AddIgnoredType` rather than calling it multiple times. This rebuilds the internal frozen set only once instead of once per type.
+
+**Thread Safety**: The `AddIgnoredType` method is thread-safe and uses a high-performance frozen set internally. However, it's recommended to call this method only during application startup (in `Program.cs`) before any validation occurs to ensure consistent behavior across your application.
+
 ### Blazor Forms and Async Validation Limitations
 
 **Important**: Blazor's built-in form validation system has inherent limitations with asynchronous validation:

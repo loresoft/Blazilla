@@ -1,10 +1,12 @@
 using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.Frozen;
 using System.Globalization;
 using System.Reflection;
 
 using Blazilla.Extensions;
 
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 
 namespace Blazilla;
@@ -25,14 +27,44 @@ public class PathResolver
     // Cache for type properties to avoid repeated reflection calls
     private static readonly ConcurrentDictionary<Type, Dictionary<string, PropertyInfo>> _propertyCache = new();
 
+    // Lock for thread-safe updates to the ignored types set
+#if NET9_0_OR_GREATER
+    private static readonly Lock _ignoredLock = new();
+#else
+    private static readonly object _ignoredLock = new();
+#endif
+
+    // Frozen set of types that should be ignored during path resolution traversal
+    // Optimized for read-heavy access patterns with zero thread-safety overhead
+    private static FrozenSet<Type> _ignoredTypes;
+
+    // Cache for IsSystemType results to avoid repeated IsAssignableFrom checks
+    // Cleared when ignored types are modified to ensure consistency
+    private static readonly ConcurrentDictionary<Type, bool> _isSystemTypeCache = new();
+
     // Track visited objects to prevent infinite loops in circular references
     private readonly HashSet<object> _visitedObjects = [];
 
     // Track path segments
     private readonly PathStack _pathStack = new();
 
-    private const int MaxDepth = 50;
+    // Maximum object graph depth to traverse before giving up
+    // Prevents excessive recursion in pathological cases (20 levels is sufficient for even very complex models)
+    private const int MaxDepth = 20;
     private int _currentDepth = 0;
+
+    static PathResolver()
+    {
+        // Initialize with default types to ignore
+        _ignoredTypes = new HashSet<Type>
+        {
+            typeof(string),
+            typeof(Uri),
+            typeof(Type),
+            typeof(IComponent),
+        }
+        .ToFrozenSet();
+    }
 
     /// <summary>
     /// Finds the property path for a field identifier within an object graph.
@@ -343,21 +375,104 @@ public class PathResolver
         });
     }
 
+
+    /// <summary>
+    /// Adds one or more types to the list of types that should be ignored during path resolution traversal.
+    /// Types can be concrete types or interface/base types. For interface and base types,
+    /// any type that implements or inherits from them will also be ignored.
+    /// This method is thread-safe and can be called at application startup to configure custom types to skip.
+    /// When adding multiple types, the FrozenSet is rebuilt only once for optimal performance.
+    /// </summary>
+    /// <param name="types">One or more types to ignore during traversal.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="types"/> is null or contains null elements.</exception>
+    public static void AddIgnoredType(params Type[] types)
+    {
+        ArgumentNullException.ThrowIfNull(types);
+
+        // Validate all types are non-null
+        foreach (var type in types)
+            ArgumentNullException.ThrowIfNull(type, nameof(types));
+
+        if (types.Length == 0)
+            return;
+
+        lock (_ignoredLock)
+        {
+            // Create new set with all new types
+            var newSet = _ignoredTypes.ToHashSet();
+            var anyAdded = false;
+
+            foreach (var type in types)
+            {
+                if (newSet.Add(type))
+                    anyAdded = true;
+            }
+
+            // Only rebuild the frozen set if we actually added new types
+            if (!anyAdded)
+                return;
+
+            _ignoredTypes = newSet.ToFrozenSet();
+
+            // Clear the cache since new ignored types might change IsSystemType results
+            _isSystemTypeCache.Clear();
+        }
+    }
+
     /// <summary>
     /// Determines if a type is a system type that typically won't contain object references
     /// that need to be traversed during path resolution.
+    /// Results are cached to avoid expensive reflection operations on subsequent calls.
     /// </summary>
     /// <param name="type">The type to check.</param>
     /// <returns>True if the type is a system type that should be skipped; otherwise, false.</returns>
     private static bool IsSystemType(Type type)
     {
-        // Skip primitive types and common system types that won't contain object references
-        return type.IsPrimitive ||
-               type.IsValueType ||
-               type.IsEnum ||
-               type == typeof(string) ||
-               type == typeof(Uri) ||
-               type == typeof(Type) ||
-               (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>));
+        // Fast path: primitives, value types, and enums (no cache needed, extremely fast)
+        if (type.IsPrimitive || type.IsValueType || type.IsEnum)
+            return true;
+
+        // Fast path: nullable types (no cache needed, very fast)
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+            return true;
+
+        // Check cache first to avoid expensive operations
+        if (_isSystemTypeCache.TryGetValue(type, out var cached))
+            return cached;
+
+        // Compute the result (expensive operations)
+        var result = IsSystemTypeCore(type);
+
+        // Cache the result for subsequent calls
+        _isSystemTypeCache.TryAdd(type, result);
+
+        return result;
+    }
+
+    /// <summary>
+    /// Core logic for determining if a type should be ignored during traversal.
+    /// This method performs expensive reflection operations and should only be called
+    /// when the result is not cached.
+    /// </summary>
+    /// <param name="type">The type to check.</param>
+    /// <returns>True if the type should be ignored; otherwise, false.</returns>
+    private static bool IsSystemTypeCore(Type type)
+    {
+        // Check if exact type is in the ignored list
+        if (_ignoredTypes.Contains(type))
+            return true;
+
+        // Check if type implements/inherits any ignored interface or base types
+        // This is expensive (reflection-based) but only called once per type
+        // IsAssignableFrom works for both interfaces and base classes
+        foreach (var ignoredType in _ignoredTypes)
+        {
+            // Skip checking the exact type we already checked above
+            // IsAssignableFrom returns true for exact matches too
+            if (ignoredType != type && ignoredType.IsAssignableFrom(type))
+                return true;
+        }
+
+        return false;
     }
 }
