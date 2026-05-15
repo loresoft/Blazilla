@@ -7,6 +7,7 @@
     <title>Blazilla</title>
 
     <base href="/" />
+    <link rel="preload" id="webassembly" />
 
     <link rel="icon" href="logo.svg" sizes="any" type="image/svg+xml" />
 
@@ -42,6 +43,8 @@
         }(window.location))
     </script>
     <!-- End Single Page Apps for GitHub Pages -->
+
+    <script type="importmap"></script>
 </head>
 
 <body>
@@ -63,7 +66,7 @@
             integrity="sha256-y3ibfOyBqlgBd+GzwFYQEVOZdNJD06HeDXihongBXKs="
             crossorigin="anonymous"></script>
 
-    <script src="_framework/blazor.webassembly.js"></script>
+    <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
 </body>
 
 </html>
