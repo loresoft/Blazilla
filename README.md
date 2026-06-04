@@ -20,7 +20,7 @@ Blazilla provides seamless integration between [FluentValidation](https://fluent
 - **Rule sets** - Execute specific groups of validation rules
 - **Custom validator selectors** - Fine-grained control over which rules to execute
 - **Dependency injection integration** - Automatic validator resolution from DI container
-- **Performance optimized** - Compiled expression trees for fast validation context creation
+- **AOT compatible** - Supports Blazor WebAssembly AOT and iOS-friendly usage patterns
 
 ## Installation
 
@@ -356,6 +356,48 @@ public class PersonValidator : AbstractValidator<Person>
 </EditForm>
 ```
 
+### WebAssembly AOT and iOS
+
+Blazilla supports AOT environments such as Blazor WebAssembly AOT and iOS. For the most trim-friendly path, manually register validators or pass the validator directly to the component.
+
+For Blazor WebAssembly AOT, publish with the Blazor WebAssembly AOT property:
+
+```bash
+dotnet publish -c Release -p:RunAOTCompilation=true
+```
+
+Recommended registration:
+
+```csharp
+using FluentValidation;
+
+builder.Services.AddSingleton<IValidator<Person>, PersonValidator>();
+builder.Services.AddSingleton<IValidator<Address>, AddressValidator>();
+```
+
+Recommended direct component usage when convenient:
+
+```razor
+<FluentValidator Validator="@validator" />
+
+@code {
+    private readonly PersonValidator validator = new();
+}
+```
+
+The assembly-scanning registration helpers remain available, but they are annotated with trim warnings because reflection-based scanning cannot guarantee that validators are preserved after trimming. Avoid assembly scanning for WebAssembly AOT and iOS apps unless you also provide linker preservation for the validator types.
+
+Nested field mapping is preserved in AOT builds. It uses public-property reflection to map Blazor `FieldIdentifier` values to FluentValidation paths, so trimmed apps must preserve public properties on validation model types when those properties are only accessed through reflection.
+
+#### AOT and Trimming Limitations
+
+- Blazilla does not use runtime expression compilation, but it still creates FluentValidation context types for the runtime model type. The model type and FluentValidation types used by your app must be preserved by the application.
+- Automatic validator resolution uses the runtime model type to resolve `IValidator<T>` from dependency injection. This works best when validators are manually registered as closed generic services. Passing `Validator` directly is the most explicit AOT-safe option.
+- Assembly scanning APIs such as `AddValidatorsFromAssembly` remain available for non-AOT convenience, but they are not trim-safe by themselves. For WebAssembly AOT and iOS, prefer manual registration or add your own linker preservation for scanned validator types.
+- Nested path resolution uses reflection over public readable properties. If trimming removes model properties that are only used for validation path mapping, nested field messages may fall back to less precise paths or fail to map to the expected Blazor field.
+- Avoid validation rules that rely on unpreserved reflection metadata or runtime code generation in AOT targets. Blazilla avoids expression compilation, but custom validators and third-party rules must also be AOT-friendly.
+- For Blazor WebAssembly AOT, use `RunAOTCompilation=true`; `PublishAot=true` is for Native AOT scenarios and is not the correct property for Blazor WebAssembly.
+
 ### Custom Validator Instance
 
 Pass a validator instance directly instead of using dependency injection:
@@ -418,7 +460,7 @@ The `FluentValidator` component supports the following parameters:
 
 - Validators should be registered as singletons in the DI container since they are stateless and can be safely shared across requests/components
 - Validators are cached and reused when resolved from dependency injection
-- Validation contexts are created using compiled expression trees for optimal performance
+- Validation contexts are created without runtime expression compilation so they can run in AOT environments
 - Asynchronous validation executes async validators directly, ensuring responsive UI performance
 
 > **AsyncMode**: Only enable `AsyncMode="true"` when your validators contain actual async rules (like `MustAsync`). Using async mode with purely synchronous validators introduces unnecessary overhead from async state machine generation and task scheduling, even though the validation logic itself is synchronous

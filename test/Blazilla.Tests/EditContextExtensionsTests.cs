@@ -58,6 +58,25 @@ public class EditContextExtensionsTests : BunitContext
     }
 
     [Fact]
+    public void Validate_WithValidatorParameter_ReturnsValidationMessages()
+    {
+        // Arrange
+        var address = CreateValidAddress();
+        address.City = string.Empty;
+        var component = CreateComponentWithValidator(address, _addressValidator);
+        var editContext = GetEditContext(component);
+
+        // Act
+        var result = editContext.Validate();
+
+        // Assert
+        result.Should().BeFalse();
+        editContext.GetValidationMessages(new FieldIdentifier(address, nameof(Address.City)))
+            .Should()
+            .ContainSingle(AddressValidator.CityRequired);
+    }
+
+    [Fact]
     public void Validate_CleansUpRuleSetProperty_AfterValidation()
     {
         // Arrange
@@ -505,7 +524,7 @@ internal class TestFormComponent<TModel> : ComponentBase
     protected override void BuildRenderTree(Microsoft.AspNetCore.Components.Rendering.RenderTreeBuilder builder)
     {
         builder.OpenComponent<EditForm>(0);
-        builder.AddAttribute(1, "Model", Model);
+        builder.AddAttribute(1, "EditContext", EditContext);
         builder.AddAttribute(2, "ChildContent", (Microsoft.AspNetCore.Components.RenderFragment<EditContext>)(context =>
         {
             return formBuilder =>

@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using System.Linq.Expressions;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 
 using FluentValidation;
@@ -55,8 +55,8 @@ public class FluentValidator : ComponentBase, IDisposable
     /// </summary>
     public const string RuleSetProperty = "__FluentValidation_RuleSet";
 
-    private static readonly ConcurrentDictionary<Type, Func<object, PropertyChain?, IValidatorSelector, IValidationContext>> _contextFactoryCache = new();
     private static readonly ConcurrentDictionary<Type, Type> _validatorTypeCache = new();
+    private static readonly ConcurrentDictionary<Type, Type> _validationContextTypeCache = new();
 
     private readonly PathResolver _pathResolver = new();
 
@@ -165,6 +165,8 @@ public class FluentValidator : ComponentBase, IDisposable
     /// <exception cref="InvalidOperationException">
     /// Thrown when no EditContext is available or when no suitable validator can be found for the model type.
     /// </exception>
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "The dynamic DI lookup is optional. AOT callers can pass Validator directly to avoid runtime generic service resolution.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "The dynamic DI lookup is optional. AOT callers can pass Validator directly, and PathResolver documents the public-property preservation requirement for nested field paths.")]
     protected override void OnInitialized()
     {
         if (EditContext == null)
@@ -183,10 +185,7 @@ public class FluentValidator : ComponentBase, IDisposable
 
         _currentValidator = Validator;
         if (_currentValidator == null)
-        {
-            var validatorType = _validatorTypeCache.GetOrAdd(_modelType, t => typeof(IValidator<>).MakeGenericType(t));
-            _currentValidator = ServiceProvider.GetService(validatorType) as IValidator;
-        }
+            _currentValidator = ResolveValidator(ServiceProvider, _modelType);
 
         if (_currentValidator == null)
         {
@@ -220,6 +219,7 @@ public class FluentValidator : ComponentBase, IDisposable
     /// </summary>
     /// <param name="sender">The source of the event.</param>
     /// <param name="eventArgs">The event arguments containing the field identifier.</param>
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "PathResolver.FindPath documents the public-property preservation requirement for nested field paths in trimmed apps.")]
     private async void OnFieldChanged(object? sender, FieldChangedEventArgs eventArgs)
     {
         if (_currentContext == null || _currentValidator == null)
@@ -308,6 +308,8 @@ public class FluentValidator : ComponentBase, IDisposable
     /// <param name="fieldName">The name of the specific field to validate, or null to validate the entire model.</param>
     /// <returns>A validation context configured with the appropriate validator selector, or null if the context cannot be created.</returns>
     /// <exception cref="InvalidOperationException">Thrown when no current EditContext is available.</exception>
+    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "ValidationContext<T> is created without expression compilation. The runtime model type is provided by the application and must be preserved for AOT.")]
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "ValidationContext<T> construction is limited to the runtime model type supplied by the application.")]
     private IValidationContext? BuildContext(string? fieldName = null)
     {
         if (_currentContext == null)
@@ -315,10 +317,7 @@ public class FluentValidator : ComponentBase, IDisposable
 
         var selector = CreateSelector(fieldName);
 
-        // Use cached factory for creating validation context instances
-        var factory = _contextFactoryCache.GetOrAdd(_modelType, CreateContextFactory);
-
-        return factory(_currentContext.Model, null, selector);
+        return CreateValidationContext(_currentContext.Model, propertyChain: null, selector);
     }
 
     /// <summary>
@@ -402,6 +401,7 @@ public class FluentValidator : ComponentBase, IDisposable
     /// </summary>
     /// <param name="validationResults">The validation results containing validation errors to display.</param>
     /// <param name="fieldIdentifier">The field identifier for the specific field being validated, or null for the entire model.</param>
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "PathResolver.FindField documents the public-property preservation requirement for nested field paths in trimmed apps.")]
     private void ApplyValidationResults(ValidationResult? validationResults, FieldIdentifier? fieldIdentifier = null)
     {
         validationResults ??= new ValidationResult();
@@ -467,42 +467,32 @@ public class FluentValidator : ComponentBase, IDisposable
         GC.SuppressFinalize(this);
     }
 
+    /// <summary>
+    /// Resolves the appropriate <see cref="IValidator"/> for the given model type from the service provider.
+    /// </summary>
+    /// <param name="serviceProvider">The service provider to resolve the validator from.</param>
+    /// <param name="modelType">The type of the model to validate.</param>
+    /// <returns>An instance of <see cref="IValidator"/> for the specified model type, or <c>null</c> if not found.</returns>
+    [RequiresDynamicCode("Resolving validators by runtime model type creates IValidator<T> dynamically. For AOT and iOS, pass a validator to the Validator parameter or manually register validators and ensure the closed generic validator service is preserved.")]
+    [RequiresUnreferencedCode("Resolving validators by runtime model type may require the closed generic IValidator<T> service to be preserved. For AOT and iOS, pass a validator to the Validator parameter when possible.")]
+    private static IValidator? ResolveValidator(IServiceProvider serviceProvider, Type modelType)
+    {
+        var validatorType = _validatorTypeCache.GetOrAdd(modelType, t => typeof(IValidator<>).MakeGenericType(t));
+        return serviceProvider.GetService(validatorType) as IValidator;
+    }
 
     /// <summary>
-    /// Creates a compiled delegate factory for creating ValidationContext instances of the specified type.
-    /// This avoids the performance overhead of using Activator.CreateInstance with reflection.
+    /// Creates a validation context without compiling expression trees so the component can run in AOT environments.
     /// </summary>
-    /// <param name="modelType">The model type to create a factory for.</param>
-    /// <returns>A compiled delegate that creates ValidationContext instances.</returns>
-    private static Func<object, PropertyChain?, IValidatorSelector, IValidationContext> CreateContextFactory(Type modelType)
+    /// <param name="model">The model instance to validate.</param>
+    /// <param name="propertyChain">The optional property chain for field-level validation.</param>
+    /// <param name="selector">The validator selector to use.</param>
+    /// <returns>A validation context for the supplied model.</returns>
+    [RequiresDynamicCode("Creating a closed ValidationContext<T> for a runtime model type requires generic type construction. This path does not compile expressions and is compatible with AOT when the model type is preserved.")]
+    [RequiresUnreferencedCode("Creating a closed ValidationContext<T> for a runtime model type requires the matching FluentValidation context constructor to be preserved.")]
+    private static IValidationContext CreateValidationContext(object model, PropertyChain? propertyChain, IValidatorSelector selector)
     {
-        var contextType = typeof(ValidationContext<>).MakeGenericType(modelType);
-
-        // Get the constructor that takes (T instance, PropertyChain propertyChain, IValidatorSelector validatorSelector)
-        var constructor = contextType.GetConstructor([modelType, typeof(PropertyChain), typeof(IValidatorSelector)])
-            ?? throw new InvalidOperationException($"Could not find appropriate constructor for {contextType}");
-
-        // Create expression parameters
-        var instanceParam = Expression.Parameter(typeof(object), "instance");
-        var propertyChainParam = Expression.Parameter(typeof(PropertyChain), "propertyChain");
-        var selectorParam = Expression.Parameter(typeof(IValidatorSelector), "selector");
-
-        // Convert the instance parameter to the correct model type
-        var typedInstance = Expression.Convert(instanceParam, modelType);
-
-        // Create the constructor call expression
-        var constructorCall = Expression.New(constructor, typedInstance, propertyChainParam, selectorParam);
-
-        // Convert the result to IValidationContext
-        var convertedResult = Expression.Convert(constructorCall, typeof(IValidationContext));
-
-        // Compile the expression into a delegate
-        var lambda = Expression.Lambda<Func<object, PropertyChain?, IValidatorSelector, IValidationContext>>(
-            convertedResult,
-            instanceParam,
-            propertyChainParam,
-            selectorParam);
-
-        return lambda.Compile();
+        var contextType = _validationContextTypeCache.GetOrAdd(model.GetType(), t => typeof(ValidationContext<>).MakeGenericType(t));
+        return (IValidationContext)Activator.CreateInstance(contextType, model, propertyChain, selector)!;
     }
 }

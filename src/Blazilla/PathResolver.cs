@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Collections.Frozen;
 using System.Globalization;
 using System.Reflection;
@@ -73,6 +74,7 @@ public class PathResolver
     /// <param name="fieldIdentifier">The field identifier containing the target model and field name.</param>
     /// <returns>The property path as a string if found; otherwise, null.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="rootObject"/> is null.</exception>
+    [RequiresUnreferencedCode("PathResolver walks public properties with reflection to preserve nested Blazor field paths. In trimmed or AOT apps, preserve public properties on validation model types.")]
     public string? FindPath(object rootObject, in FieldIdentifier fieldIdentifier)
     {
         ArgumentNullException.ThrowIfNull(rootObject);
@@ -91,6 +93,7 @@ public class PathResolver
     /// Thrown when <paramref name="rootObject"/>, <paramref name="targetInstance"/>,
     /// or <paramref name="targetProperty"/> is null.
     /// </exception>
+    [RequiresUnreferencedCode("PathResolver walks public properties with reflection to preserve nested Blazor field paths. In trimmed or AOT apps, preserve public properties on validation model types.")]
     public string? FindPath(object rootObject, object targetInstance, string targetProperty)
     {
         ArgumentNullException.ThrowIfNull(rootObject);
@@ -118,6 +121,7 @@ public class PathResolver
     /// <param name="path">The property path to navigate. The method returns the object that contains the final property access.</param>
     /// <returns>The object instance that contains the target property if found; otherwise, null.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="rootObject"/> or <paramref name="path"/> is null.</exception>
+    [RequiresUnreferencedCode("PathResolver walks public properties with reflection to map FluentValidation property paths back to Blazor fields. In trimmed or AOT apps, preserve public properties on validation model types.")]
     public static FieldIdentifier? FindField(object rootObject, string path)
     {
         ArgumentNullException.ThrowIfNull(rootObject);
@@ -180,6 +184,7 @@ public class PathResolver
     /// <param name="target">The target object instance to find.</param>
     /// <param name="targetProperty">The name of the target property to find.</param>
     /// <returns>True if the target property is found; otherwise, false.</returns>
+    [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = "Public PathResolver APIs document the requirement to preserve public properties on validation model types in trimmed apps.")]
     private bool TryFindInCurrent(object current, object target, string targetProperty)
     {
         // Prevent excessive recursion depth
@@ -349,6 +354,7 @@ public class PathResolver
     /// <param name="targetObject">The target object to examine.</param>
     /// <param name="targetProperty">The name of the target property to find.</param>
     /// <returns>True if the target property exists on the target object; otherwise, false.</returns>
+    [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = "Public PathResolver APIs document the requirement to preserve public properties on validation model types in trimmed apps.")]
     private bool TryFindTargetProperty(object targetObject, string targetProperty)
     {
         var properties = GetCachedProperties(targetObject.GetType());
@@ -365,14 +371,22 @@ public class PathResolver
     /// </summary>
     /// <param name="type">The type to get properties for.</param>
     /// <returns>A dictionary mapping property names to PropertyInfo objects.</returns>
-    private static Dictionary<string, PropertyInfo> GetCachedProperties(Type type)
+    private static Dictionary<string, PropertyInfo> GetCachedProperties(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
     {
-        return _propertyCache.GetOrAdd(type, t =>
-        {
-            return t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                    .Where(p => p.CanRead)
-                    .ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
-        });
+        if (_propertyCache.TryGetValue(type, out var properties))
+            return properties;
+
+        properties = CreatePropertyCache(type);
+        return _propertyCache.GetOrAdd(type, properties);
+    }
+
+    private static Dictionary<string, PropertyInfo> CreatePropertyCache(
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] Type type)
+    {
+        return type.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.CanRead)
+            .ToDictionary(p => p.Name, StringComparer.OrdinalIgnoreCase);
     }
 
 

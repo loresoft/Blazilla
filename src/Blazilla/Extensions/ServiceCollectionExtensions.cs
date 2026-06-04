@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 using FluentValidation;
@@ -19,6 +20,7 @@ public static class ServiceCollectionExtensions
     /// <param name="assemblies">The assemblies to scan for validators.</param>
     /// <param name="lifetime">The service lifetime for the registered validators. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
     /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+    [RequiresUnreferencedCode("Assembly scanning for validators is not trim-safe. For WebAssembly AOT and iOS, manually register validators such as services.AddSingleton<IValidator<Person>, PersonValidator>().")]
     public static IServiceCollection AddValidatorsFromAssemblies(
         this IServiceCollection services,
         IEnumerable<Assembly> assemblies,
@@ -37,6 +39,7 @@ public static class ServiceCollectionExtensions
     /// <param name="assembly">The assembly to scan for validators.</param>
     /// <param name="lifetime">The service lifetime for the registered validators. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
     /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+    [RequiresUnreferencedCode("Assembly scanning for validators is not trim-safe. For WebAssembly AOT and iOS, manually register validators such as services.AddSingleton<IValidator<Person>, PersonValidator>().")]
     public static IServiceCollection AddValidatorsFromAssembly(
         this IServiceCollection services,
         Assembly assembly,
@@ -56,6 +59,7 @@ public static class ServiceCollectionExtensions
     /// <param name="type">The type whose assembly will be scanned for validators.</param>
     /// <param name="lifetime">The service lifetime for the registered validators. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
     /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+    [RequiresUnreferencedCode("Assembly scanning for validators is not trim-safe. For WebAssembly AOT and iOS, manually register validators such as services.AddSingleton<IValidator<Person>, PersonValidator>().")]
     public static IServiceCollection AddValidatorsFromAssemblyContaining(
         this IServiceCollection services,
         Type type,
@@ -69,11 +73,13 @@ public static class ServiceCollectionExtensions
     /// <param name="services">The <see cref="IServiceCollection"/> to add the validators to.</param>
     /// <param name="lifetime">The service lifetime for the registered validators. Defaults to <see cref="ServiceLifetime.Singleton"/>.</param>
     /// <returns>The <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
+    [RequiresUnreferencedCode("Assembly scanning for validators is not trim-safe. For WebAssembly AOT and iOS, manually register validators such as services.AddSingleton<IValidator<Person>, PersonValidator>().")]
     public static IServiceCollection AddValidatorsFromAssemblyContaining<T>(
         this IServiceCollection services,
         ServiceLifetime lifetime = ServiceLifetime.Singleton)
         => services.AddValidatorsFromAssembly(typeof(T).Assembly, lifetime);
 
+    [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = "Assembly scanning APIs are annotated with RequiresUnreferencedCode and are not recommended for AOT; manual registration is the trim-safe path.")]
     private static IServiceCollection AddScanResult(this IServiceCollection services, AssemblyScanner.AssemblyScanResult scanResult, ServiceLifetime lifetime)
     {
         //Register as interface
