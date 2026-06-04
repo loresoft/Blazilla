@@ -469,40 +469,21 @@ public class FluentValidator : ComponentBase, IDisposable
 
 
     /// <summary>
-    /// Creates a compiled delegate factory for creating ValidationContext instances of the specified type.
-    /// This avoids the performance overhead of using Activator.CreateInstance with reflection.
+    /// Creates a factory for creating ValidationContext instances of the specified type.
+    /// Uses reflection instead of expression compilation so the component remains safe in iOS AOT-only mode.
     /// </summary>
     /// <param name="modelType">The model type to create a factory for.</param>
-    /// <returns>A compiled delegate that creates ValidationContext instances.</returns>
+    /// <returns>A delegate that creates ValidationContext instances.</returns>
     private static Func<object, PropertyChain?, IValidatorSelector, IValidationContext> CreateContextFactory(Type modelType)
     {
         var contextType = typeof(ValidationContext<>).MakeGenericType(modelType);
 
-        // Get the constructor that takes (T instance, PropertyChain propertyChain, IValidatorSelector validatorSelector)
-        var constructor = contextType.GetConstructor([modelType, typeof(PropertyChain), typeof(IValidatorSelector)])
-            ?? throw new InvalidOperationException($"Could not find appropriate constructor for {contextType}");
+        return (instance, propertyChain, selector) =>
+        {
+            var context = Activator.CreateInstance(contextType, instance, propertyChain, selector);
 
-        // Create expression parameters
-        var instanceParam = Expression.Parameter(typeof(object), "instance");
-        var propertyChainParam = Expression.Parameter(typeof(PropertyChain), "propertyChain");
-        var selectorParam = Expression.Parameter(typeof(IValidatorSelector), "selector");
-
-        // Convert the instance parameter to the correct model type
-        var typedInstance = Expression.Convert(instanceParam, modelType);
-
-        // Create the constructor call expression
-        var constructorCall = Expression.New(constructor, typedInstance, propertyChainParam, selectorParam);
-
-        // Convert the result to IValidationContext
-        var convertedResult = Expression.Convert(constructorCall, typeof(IValidationContext));
-
-        // Compile the expression into a delegate
-        var lambda = Expression.Lambda<Func<object, PropertyChain?, IValidatorSelector, IValidationContext>>(
-            convertedResult,
-            instanceParam,
-            propertyChainParam,
-            selectorParam);
-
-        return lambda.Compile();
+            return context as IValidationContext
+                ?? throw new InvalidOperationException($"Could not create validation context for {modelType}");
+        };
     }
 }
