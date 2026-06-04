@@ -477,7 +477,7 @@ public class FluentValidator : ComponentBase, IDisposable
     [RequiresUnreferencedCode("Resolving validators by runtime model type may require the closed generic IValidator<T> service to be preserved. For AOT and iOS, pass a validator to the Validator parameter when possible.")]
     private static IValidator? ResolveValidator(IServiceProvider serviceProvider, Type modelType)
     {
-        var validatorType = _validatorTypeCache.GetOrAdd(modelType, t => typeof(IValidator<>).MakeGenericType(t));
+        var validatorType = _validatorTypeCache.GetOrAdd(modelType, static t => typeof(IValidator<>).MakeGenericType(t));
         return serviceProvider.GetService(validatorType) as IValidator;
     }
 
@@ -492,7 +492,7 @@ public class FluentValidator : ComponentBase, IDisposable
     [RequiresUnreferencedCode("Creating a closed ValidationContext<T> for a runtime model type requires the matching FluentValidation context constructor to be preserved.")]
     private static IValidationContext CreateValidationContext(object model, PropertyChain? propertyChain, IValidatorSelector selector)
     {
-        var contextType = _validationContextTypeCache.GetOrAdd(model.GetType(), t => typeof(ValidationContext<>).MakeGenericType(t));
+        var contextType = _validationContextTypeCache.GetOrAdd(model.GetType(), static t => typeof(ValidationContext<>).MakeGenericType(t));
         return (IValidationContext)Activator.CreateInstance(contextType, model, propertyChain, selector)!;
     }
 }
