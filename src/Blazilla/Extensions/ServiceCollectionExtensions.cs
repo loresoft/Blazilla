@@ -80,7 +80,10 @@ public static class ServiceCollectionExtensions
         => services.AddValidatorsFromAssembly(typeof(T).Assembly, lifetime);
 
     [UnconditionalSuppressMessage("Trimming", "IL2072", Justification = "Assembly scanning APIs are annotated with RequiresUnreferencedCode and are not recommended for AOT; manual registration is the trim-safe path.")]
-    private static IServiceCollection AddScanResult(this IServiceCollection services, AssemblyScanner.AssemblyScanResult scanResult, ServiceLifetime lifetime)
+    private static IServiceCollection AddScanResult(
+        this IServiceCollection services,
+        AssemblyScanner.AssemblyScanResult scanResult,
+        ServiceLifetime lifetime)
     {
         //Register as interface
         services.TryAddEnumerable(
