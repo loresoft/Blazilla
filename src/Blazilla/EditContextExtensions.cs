@@ -45,7 +45,6 @@ public static class EditContextExtensions
     /// then waiting for any pending asynchronous validation tasks to complete.
     /// </summary>
     /// <param name="editContext">The <see cref="EditContext"/> to validate.</param>
-    /// <param name="ruleSets">Optional validation rule sets to apply. When provided, overrides any rule sets configured on the validator component.</param>
     /// <returns>
     /// A <see cref="Task{TResult}"/> that represents the asynchronous validation operation.
     /// The task result is <see langword="true"/> if validation succeeded (no validation messages); otherwise, <see langword="false"/>.
