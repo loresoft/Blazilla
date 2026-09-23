@@ -483,10 +483,60 @@ public class PathResolver
         {
             // Skip checking the exact type we already checked above
             // IsAssignableFrom returns true for exact matches too
-            if (ignoredType != type && ignoredType.IsAssignableFrom(type))
+            if (ignoredType != type && TestType(ignoredType,type))
                 return true;
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Test Type
+    /// </summary>
+    private static bool TestType(Type ignoredType, Type type)
+    {
+        bool result = ignoredType.IsAssignableFrom(type) ||
+                      CheckGenericType(ignoredType, type) ||
+                      CheckInterface(ignoredType, type);
+
+        // result fail && ignoredType = IsGenericType and IsGenericTypeDefinition, check baseTypes
+
+        if (!result && ignoredType.IsGenericType && ignoredType.IsGenericTypeDefinition)
+        {
+
+            var currentBase = type.BaseType;
+            // Check the base types
+            while (currentBase != null && !result)
+            {
+                result = TestType(ignoredType, currentBase);
+                currentBase = currentBase.BaseType;
+            }
+        }
+        return result;
+
+    }
+
+
+
+    /// <summary>
+    /// 
+    /// Check GenericType Interface 
+    /// Example  ignoredType = <![CDATA[MyInterface<>]]>
+    /// 		 Type = MyClass : <![CDATA[MyInterface<int>]]>
+    /// </summary>
+    private static bool CheckInterface(Type ignoredType, Type type)
+    {
+        bool result = type.GetInterfaces().Any(i => i.IsGenericType && i.GetGenericTypeDefinition().IsAssignableFrom(ignoredType));
+        return result;
+    }
+
+    /// <summary>
+    /// Check GenericType
+    /// Example  ignoredType = <![CDATA[List<>]]>
+    /// 		 Type =  <![CDATA[List<bool>]]>
+    /// </summary>
+    private static bool CheckGenericType(Type ignoredType, Type type)
+    {
+        return (type.IsGenericType ? ignoredType.IsAssignableFrom(type.GetGenericTypeDefinition()) : false);
     }
 }
