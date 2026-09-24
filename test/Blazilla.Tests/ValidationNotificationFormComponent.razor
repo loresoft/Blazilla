@@ -1,0 +1,29 @@
+@typeparam TModel
+
+@*
+    Test form that renders a ValidationSummary so the rendered markup reflects the
+    validation message store only after OnValidationStateChanged has been raised.
+*@
+
+<EditForm EditContext="@EditContext">
+    <FluentValidator Validator="@Validator" AsyncMode="@AsyncMode" />
+    <ValidationSummary />
+</EditForm>
+
+@code {
+    [Parameter]
+    public TModel? Model { get; set; }
+
+    [Parameter]
+    public IValidator? Validator { get; set; }
+
+    [Parameter]
+    public bool AsyncMode { get; set; }
+
+    public EditContext? EditContext { get; private set; }
+
+    protected override void OnInitialized()
+    {
+        EditContext = new EditContext(Model!);
+    }
+}
