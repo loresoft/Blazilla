@@ -105,8 +105,15 @@ public class PathResolver
         _pathStack.Clear();
         _currentDepth = 0;
 
-        if (TryFindInCurrent(rootObject, targetInstance, targetProperty))
-            return _pathStack.ToString();
+        try
+        {
+            if (TryFindInCurrent(rootObject, targetInstance, targetProperty))
+                return _pathStack.ToString();
+        }
+        finally
+        {
+            _visitedObjects.Clear();
+        }
 
         return null;
     }
@@ -215,7 +222,6 @@ public class PathResolver
         }
         finally
         {
-            _visitedObjects.Remove(current);
             _currentDepth--;
         }
     }
