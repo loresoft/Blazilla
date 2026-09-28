@@ -2,6 +2,8 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
 
+using Blazilla.ValidatorSelectors;
+
 using FluentValidation;
 using FluentValidation.Internal;
 using FluentValidation.Results;
@@ -329,8 +331,8 @@ public class FluentValidator : ComponentBase, IDisposable
     /// <remarks>
     /// The selector prioritizes sources in the following order:
     /// 1. Custom <see cref="Selector"/> (highest priority)
-    /// 2. Field-specific selector for the given <paramref name="fieldName"/>
-    /// 3. Rule set selector based on <see cref="AllRules"/> or <see cref="RuleSets"/> (lowest priority)
+    /// 2. Rule set selector based on <see cref="AllRules"/> or <see cref="RuleSets"/> (lowest priority)
+    /// A field-specific selector is combined with the chosen selector to constrain the rules when <paramref name="fieldName"/> is specified.
     /// </remarks>
     private IValidatorSelector CreateSelector(string? fieldName)
     {
@@ -340,10 +342,6 @@ public class FluentValidator : ComponentBase, IDisposable
         // if nothing is specified, use the default selector
         if (Selector == null && fieldName == null && !AllRules && !HasAnyRuleSets(ruleSetProperty))
             return ValidatorOptions.Global.ValidatorSelectors.DefaultValidatorSelectorFactory();
-
-        // use field selector only if fieldName is provided
-        if (fieldName != null)
-            return ValidatorOptions.Global.ValidatorSelectors.MemberNameValidatorSelectorFactory([fieldName]);
 
         var selectors = new List<IValidatorSelector>();
 
@@ -368,16 +366,31 @@ public class FluentValidator : ComponentBase, IDisposable
             selectors.Add(rulesetSelector);
         }
 
+        var primarySelector = default(IValidatorSelector);
+
         // if no selectors, use default
         if (selectors.Count == 0)
-            return ValidatorOptions.Global.ValidatorSelectors.DefaultValidatorSelectorFactory();
+            primarySelector = ValidatorOptions.Global.ValidatorSelectors.DefaultValidatorSelectorFactory();
 
         // if only one selector, use it directly
-        if (selectors.Count == 1)
-            return selectors[0];
+        else if (selectors.Count == 1)
+            primarySelector = selectors[0];
 
         // combine all selectors into one
-        return ValidatorOptions.Global.ValidatorSelectors.CompositeValidatorSelectorFactory(selectors);
+        else
+            primarySelector = ValidatorOptions.Global.ValidatorSelectors.CompositeValidatorSelectorFactory(selectors);
+
+        // If no fieldName is provided, use the primary selector.
+        if (fieldName == null)
+            return primarySelector;
+
+        // use field selector only if fieldName is provided
+        var fieldSelector = ValidatorOptions.Global.ValidatorSelectors.MemberNameValidatorSelectorFactory([fieldName]);
+
+        // Combine the primary and field selector using Boolean AND semantics.
+        return new BooleanAndCompositeSelector(
+            primarySelector,
+            fieldSelector);
     }
 
     /// <summary>
