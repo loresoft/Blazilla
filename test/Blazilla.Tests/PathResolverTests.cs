@@ -622,6 +622,54 @@ public class PathResolverTests
         result.Should().Be("Settings.AllowedEmailDomains[1]");
     }
 
+    [Fact()]
+    public void FindPath_WithMultiplePathsToInstance_EvaluatesEachInstanceAtMostOnce()
+    {
+        // Arrange
+        var targetAddress = new Address { City = "London" };
+
+        var company = new Company()
+        {
+            Employees =
+            [
+                new Models.TrackingEmployee { FirstName = "Alice", HomeAddress = new() { City = "New York" } },
+                new Models.TrackingEmployee { FirstName = "Eve", HomeAddress = targetAddress },
+            ]
+        };
+
+        company.Departments.Add(
+            new Models.DepartmentWithNavigationProperty()
+            {
+                Name = "R&D",
+
+                // Make Alice available via multiple paths.
+                Manager = company.Employees[0],
+            });
+
+        // WARNING: Stepping through the code while TrackingEnabled == true might cause the debugger to read the property and skew the results.
+        foreach (var employee in company.Employees
+            .Cast<Models.TrackingEmployee>())
+        {
+            employee.TrackingEnabled = true;
+        }
+
+        // Act
+        var result = _pathResolver.FindPath(company, targetAddress, nameof(Address.City));
+
+        // Assert
+        foreach (var employee in company.Employees
+            .Cast<Models.TrackingEmployee>())
+        {
+            employee.TrackingEnabled = false;
+        }
+
+        result.Should().NotBeNull();
+        result.Should().Be("Employees[1].HomeAddress.City");
+
+        company.Employees.Should().AllSatisfy(
+            employee => employee.As<Models.TrackingEmployee>().HomeAddressReadCount.Should().BeLessThanOrEqualTo(1));
+    }
+
     [Fact]
     public void FindField_WithFieldIdentifier_NullFieldIdentifier_ThrowsArgumentNullException()
     {
