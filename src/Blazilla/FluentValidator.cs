@@ -279,45 +279,56 @@ public class FluentValidator : ComponentBase, IDisposable
         if (context == null)
             return;
 
-        if (AsyncMode)
-        {
-            // wrap the entire validation workflow in a task to prevent race conditions
-            // the pending task must complete both validation AND applying results before
-            // EditContextExtensions.ValidateAsync() can safely check for validation messages
-            var task = ValidateModelAsync(_currentValidator, context);
+        // wrap the entire validation workflow in a single task to prevent race conditions
+        // the pending task must complete validation, apply the results AND raise the validation
+        // state change before EditContextExtensions.ValidateAsync() returns, otherwise callers
+        // can observe the messages before the form has re-rendered them
+        var task = ValidateAndNotifyAsync(_currentValidator, _currentContext, context);
 
-            // store pending task in EditContext properties so it can be awaited if needed
-            // used in EditContextExtensions.ValidateAsync() to prevent premature form submission
-            _currentContext.Properties[PendingTask] = task;
+        // store pending task in EditContext properties so it can be awaited if needed
+        // used in EditContextExtensions.ValidateAsync() to prevent premature form submission
+        _currentContext.Properties[PendingTask] = task;
 
-            // await the task so message store is updated when task completes
-            await task.ConfigureAwait(false);
-        }
-        else
-        {
-            ValidationResult? validationResults = _currentValidator.Validate(context);
-
-            // update messages for all fields
-            ApplyValidationResults(validationResults);
-        }
-
-        // notify on UI thread
-        _ = InvokeAsync(_currentContext.NotifyValidationStateChanged);
+        // await the task so message store is updated when task completes
+        await task.ConfigureAwait(false);
     }
 
     /// <summary>
-    /// Validates the entire model asynchronously and applies the results on the UI thread, so the
-    /// message store is never written concurrently with a render or another validation message store.
+    /// Runs full model validation, applies the results to the message store and raises the
+    /// validation state change on the UI thread.
     /// </summary>
     /// <param name="validator">The validator to run.</param>
+    /// <param name="editContext">The edit context whose validation state changes.</param>
     /// <param name="context">The validation context for the entire model.</param>
-    /// <returns>A task that completes once the results are applied to the message store.</returns>
-    private async Task ValidateModelAsync(IValidator validator, IValidationContext context)
+    /// <returns>
+    /// A task that completes only after the validation messages have been stored and
+    /// <see cref="EditContext.NotifyValidationStateChanged"/> has been invoked on the renderer
+    /// dispatcher, so awaiting it guarantees the form has been asked to re-render.
+    /// </returns>
+    private async Task ValidateAndNotifyAsync(IValidator validator, EditContext editContext, IValidationContext context)
     {
-        var validationResults = await validator.ValidateAsync(context).ConfigureAwait(false);
+        if (AsyncMode)
+        {
+            var validationResults = await validator.ValidateAsync(context).ConfigureAwait(false);
 
-        // update messages for all fields
-        await InvokeAsync(() => ApplyValidationResults(validationResults)).ConfigureAwait(false);
+            // update messages for all fields and notify on the UI thread, so the message store is
+            // never written concurrently with a render or another validation message store
+            await InvokeAsync(() =>
+            {
+                ApplyValidationResults(validationResults);
+                editContext.NotifyValidationStateChanged();
+            }).ConfigureAwait(false);
+        }
+        else
+        {
+            // applied inline: the synchronous EditContextExtensions.Validate() reads the
+            // messages immediately after raising validation, from whatever thread it runs on
+            ApplyValidationResults(validator.Validate(context));
+
+            // notify on UI thread; awaited so the state change, and the re-render it triggers,
+            // have run before this task completes
+            await InvokeAsync(editContext.NotifyValidationStateChanged).ConfigureAwait(false);
+        }
     }
 
     /// <summary>
