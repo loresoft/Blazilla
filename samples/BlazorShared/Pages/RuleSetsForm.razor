@@ -1,0 +1,214 @@
+@page "/rulesets"
+
+<h3>Overview</h3>
+<p>
+	This example demonstrates the use of Rule Sets to control which rules are evaluated during validation.
+	Select which rule sets to apply from the following list, then trigger validation by submitting the form.
+</p>
+<p class="text-muted">
+	If no rule sets are selected, the default rule set will be applied.
+</p>
+
+<EditForm Model="ruleSetsSelection">
+	<div class="row">
+
+		<div class="form-check col-md-6">
+			<InputCheckbox class="form-check-input" @bind-value="ruleSetsSelection.DefaultRuleSetEnabled" id="DefaultRuleSet" />
+			<label class="form-check-label" for="DefaultRuleSet">
+				Default Rule Set
+			</label>
+			<div class="form-text">
+				Requires field D
+			</div>
+		</div>
+
+		<div class="form-check col-md-6">
+			<InputCheckbox class="form-check-input" @bind-value="ruleSetsSelection.RuleSetAEnabled" id="@RuleSetsValidator.RuleSetA" />
+			<label class="form-check-label" for="@RuleSetsValidator.RuleSetA">
+				Rule Set A
+			</label>
+			<div class="form-text">
+				Requires fields A and B
+			</div>
+		</div>
+
+		<div class="form-check col-md-6">
+			<InputCheckbox class="form-check-input" @bind-value="ruleSetsSelection.RuleSetBEnabled" id="@RuleSetsValidator.RuleSetB" />
+			<label class="form-check-label" for="@RuleSetsValidator.RuleSetB">
+				Rule Set B
+			</label>
+			<div class="form-text">
+				Requires field B
+			</div>
+		</div>
+
+		<div class="form-check col-md-6">
+			<InputCheckbox class="form-check-input" @bind-value="ruleSetsSelection.RuleSetCEnabled" id="@RuleSetsValidator.RuleSetC" />
+			<label class="form-check-label" for="@RuleSetsValidator.RuleSetC">
+				Rule Set C
+			</label>
+			<div class="form-text">
+				Requires fields C and D
+			</div>
+		</div>
+
+	</div>
+</EditForm>
+
+<h3 class="mt-3">Rule Sets Form</h3>
+
+<EditForm Model="@ruleSetsModel"
+					OnValidSubmit="@HandleValidSubmit">
+
+	<FluentValidator RuleSets="GetSelectedRuleSets()" />
+
+	<div class="row">
+
+		<div class="col-md-6">
+			<div class="mb-3">
+				<label for="fieldA"
+							 class="form-label">Field A</label>
+				<InputText id="fieldA"
+									 class="form-control"
+									 @bind-Value="ruleSetsModel.FieldA" />
+				<ValidationMessage For="@(() => ruleSetsModel.FieldA)" />
+			</div>
+
+			<div class="mb-3">
+				<label for="fieldB"
+							 class="form-label">Field B</label>
+				<InputText id="fieldA"
+									 class="form-control"
+									 @bind-Value="ruleSetsModel.FieldB" />
+				<ValidationMessage For="@(() => ruleSetsModel.FieldB)" />
+			</div>
+		</div>
+
+		<div class="col-md-6">
+			<div class="mb-3">
+				<label for="fieldC"
+							 class="form-label">Field C</label>
+				<InputText id="fieldC"
+									 class="form-control"
+									 @bind-Value="ruleSetsModel.FieldC" />
+				<ValidationMessage For="@(() => ruleSetsModel.FieldC)" />
+			</div>
+
+			<div class="mb-3">
+				<label for="fieldD"
+							 class="form-label">Field D</label>
+				<InputText id="fieldA"
+									 class="form-control"
+									 @bind-Value="ruleSetsModel.FieldD" />
+				<ValidationMessage For="@(() => ruleSetsModel.FieldD)" />
+			</div>
+		</div>
+
+	</div>
+
+	<div class="row mt-3">
+		<div class="col-12">
+			<button type="submit"
+							class="btn btn-primary me-2">
+				Submit
+			</button>
+			<button type="button"
+							class="btn btn-secondary"
+							@onclick="ResetForm">
+				Reset
+			</button>
+		</div>
+	</div>
+
+	<div class="row mt-3">
+		<div class="col-12">
+			<ValidationSummary />
+		</div>
+	</div>
+
+	@if (isSubmitted)
+	{
+		<div class="row mt-4">
+			<div class="col-12">
+				<div class="alert alert-success"
+						 role="alert">
+					<h4 class="alert-heading">Rule Sets Submitted Successfully!</h4>
+					<p>The rule sets have been validated and submitted. Here's what you entered:</p>
+					<hr>
+					<p class="mb-0">
+						@if (!string.IsNullOrWhiteSpace(ruleSetsModel.FieldA))
+						{
+							@ruleSetsModel.FieldA
+
+							<br />
+						}
+						@if (!string.IsNullOrWhiteSpace(ruleSetsModel.FieldB))
+						{
+							@ruleSetsModel.FieldB
+
+							<br />
+						}
+						@if (!string.IsNullOrWhiteSpace(ruleSetsModel.FieldC))
+						{
+							@ruleSetsModel.FieldC
+
+							<br />
+						}
+						@if (!string.IsNullOrWhiteSpace(ruleSetsModel.FieldD))
+						{
+							@ruleSetsModel.FieldD
+
+							<br />
+						}
+					</p>
+				</div>
+			</div>
+		</div>
+	}
+
+</EditForm>
+
+@code {
+	private RuleSetsSelection ruleSetsSelection = new();
+	private RuleSetsModel ruleSetsModel = new();
+
+	private bool isSubmitted = false;
+
+	private IEnumerable<string> GetSelectedRuleSets()
+	{
+		if (ruleSetsSelection.DefaultRuleSetEnabled)
+		{
+			yield return "default";
+		}
+
+		if (ruleSetsSelection.RuleSetAEnabled)
+		{
+			yield return RuleSetsValidator.RuleSetA;
+		}
+
+		if (ruleSetsSelection.RuleSetBEnabled)
+		{
+			yield return RuleSetsValidator.RuleSetB;
+		}
+
+		if (ruleSetsSelection.RuleSetCEnabled)
+		{
+			yield return RuleSetsValidator.RuleSetC;
+		}
+	}
+
+	private async Task HandleValidSubmit()
+	{
+		// Simulate async operation
+		await Task.Delay(500);
+
+		isSubmitted = true;
+		StateHasChanged();
+	}
+
+	private void ResetForm()
+	{
+		ruleSetsModel = new();
+		isSubmitted = false;
+	}
+}

@@ -19,6 +19,7 @@ public static class DependencyInjectionExtensions
         services.TryAddSingleton<IValidator<Person>, PersonValidator>();
         services.TryAddSingleton<IValidator<Project>, ProjectValidator>();
         services.TryAddSingleton<IValidator<ProjectMilestone>, ProjectMilestoneValidator>();
+        services.TryAddSingleton<IValidator<RuleSetsModel>, RuleSetsValidator>();
 
         return services;
     }
