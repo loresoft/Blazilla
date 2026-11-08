@@ -1,7 +1,5 @@
-using BlazorShared.Models;
-using BlazorShared.Validators;
-
-using FluentValidation;
+using Blazilla.Tests.Models;
+using Blazilla.Tests.Validators;
 
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
@@ -137,7 +135,7 @@ public class EditContextExtensionsTests : BunitContext
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentNullException>(
-            async () => await editContext!.ValidateAsync([]));
+            async () => await editContext!.ValidateAsync([], Xunit.TestContext.Current.CancellationToken));
         exception.ParamName.Should().Be("editContext");
     }
 
@@ -146,11 +144,11 @@ public class EditContextExtensionsTests : BunitContext
     {
         // Arrange
         var address = CreateValidAddress();
-        var component = CreateComponentWithValidator(address, _addressValidator, asyncMode: true);
+        var component = CreateComponentWithValidator(address, _addressValidator);
         var editContext = GetEditContext(component);
 
         // Act
-        var result = await editContext.ValidateAsync();
+        var result = await editContext.ValidateAsync(Xunit.TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().BeTrue();
@@ -169,11 +167,11 @@ public class EditContextExtensionsTests : BunitContext
             EmailAddress = "test@example.com",
             Address = CreateValidAddress()
         };
-        var component = CreateComponentWithValidator(person, _personValidator, asyncMode: true);
+        var component = CreateComponentWithValidator(person, _personValidator);
         var editContext = GetEditContext(component);
 
         // Act
-        await editContext.ValidateAsync();
+        await editContext.ValidateAsync(Xunit.TestContext.Current.CancellationToken);
 
         // Assert - Pending task should be removed
         var hasPendingTask = editContext.Properties.TryGetValue(FluentValidator.PendingTask, out _);
@@ -185,11 +183,11 @@ public class EditContextExtensionsTests : BunitContext
     {
         // Arrange
         var address = CreateValidAddress();
-        var component = CreateComponentWithValidator(address, _addressValidator, asyncMode: true);
+        var component = CreateComponentWithValidator(address, _addressValidator);
         var editContext = GetEditContext(component);
 
         // Act
-        await editContext.ValidateAsync(["TestRuleSet"]);
+        await editContext.ValidateAsync(["TestRuleSet"], Xunit.TestContext.Current.CancellationToken);
 
         // Assert - Rule set property should be cleaned up
         var hasProperty = editContext.Properties.TryGetValue(FluentValidator.RuleSetProperty, out _);
@@ -201,11 +199,11 @@ public class EditContextExtensionsTests : BunitContext
     {
         // Arrange
         var address = CreateValidAddress();
-        var component = CreateComponentWithValidator(address, _addressValidator, asyncMode: false);
+        var component = CreateComponentWithValidator(address, _addressValidator);
         var editContext = GetEditContext(component);
 
         // Act
-        var result = await editContext.ValidateAsync();
+        var result = await editContext.ValidateAsync(Xunit.TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().BeTrue();
@@ -217,11 +215,11 @@ public class EditContextExtensionsTests : BunitContext
     {
         // Arrange
         var address = CreateValidAddress();
-        var component = CreateComponentWithValidator(address, _addressValidator, asyncMode: true);
+        var component = CreateComponentWithValidator(address, _addressValidator);
         var editContext = GetEditContext(component);
 
         // Act
-        await editContext.ValidateAsync([]);
+        await editContext.ValidateAsync([], Xunit.TestContext.Current.CancellationToken);
 
         // Assert
         var hasProperty = editContext.Properties.TryGetValue(FluentValidator.RuleSetProperty, out _);
@@ -233,12 +231,12 @@ public class EditContextExtensionsTests : BunitContext
     {
         // Arrange
         var address = CreateValidAddress();
-        var component = CreateComponentWithValidator(address, _addressValidator, asyncMode: true);
+        var component = CreateComponentWithValidator(address, _addressValidator);
         var editContext = GetEditContext(component);
 
         // Act
         IEnumerable<string>? nullRuleSets = null;
-        await editContext.ValidateAsync(nullRuleSets!);
+        await editContext.ValidateAsync(nullRuleSets!, Xunit.TestContext.Current.CancellationToken);
 
         // Assert
         var hasProperty = editContext.Properties.TryGetValue(FluentValidator.RuleSetProperty, out _);
@@ -257,17 +255,18 @@ public class EditContextExtensionsTests : BunitContext
             EmailAddress = "valid@example.com", // Valid email
             Address = CreateValidAddress()
         };
-        var component = CreateComponentWithValidator(person, _personValidator, asyncMode: true);
+        var component = CreateComponentWithValidator(person, _personValidator);
         var editContext = GetEditContext(component);
 
         // Act
-        var result = await editContext.ValidateAsync();
+        var result = await editContext.ValidateAsync(Xunit.TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().BeTrue();
         editContext.GetValidationMessages().Should().BeEmpty();
     }
 
+#if !NET11_0_OR_GREATER
     [Fact]
     public async Task ValidateAsync_WaitsForPendingTaskToComplete()
     {
@@ -280,7 +279,7 @@ public class EditContextExtensionsTests : BunitContext
             EmailAddress = "async@example.com",
             Address = CreateValidAddress()
         };
-        var component = CreateComponentWithValidator(person, _personValidator, asyncMode: true);
+        var component = CreateComponentWithValidator(person, _personValidator);
         var editContext = GetEditContext(component);
 
         // Create a pending task manually to simulate async validation in progress
@@ -288,7 +287,7 @@ public class EditContextExtensionsTests : BunitContext
         editContext.Properties[FluentValidator.PendingTask] = taskSource.Task;
 
         // Act - Start validation in background
-        var validationTask = editContext.ValidateAsync();
+        var validationTask = editContext.ValidateAsync(Xunit.TestContext.Current.CancellationToken);
 
         // Complete the pending task after a short delay
         await Task.Delay(100, Xunit.TestContext.Current.CancellationToken);
@@ -301,6 +300,7 @@ public class EditContextExtensionsTests : BunitContext
         var hasPendingTask = editContext.Properties.TryGetValue(FluentValidator.PendingTask, out _);
         hasPendingTask.Should().BeFalse();
     }
+#endif
 
     #endregion
 
@@ -341,11 +341,11 @@ public class EditContextExtensionsTests : BunitContext
             EmailAddress = "test@example.com",
             Address = CreateValidAddress()
         };
-        var component = CreateComponentWithValidator(person, _personValidator, asyncMode: true);
+        var component = CreateComponentWithValidator(person, _personValidator);
         var editContext = GetEditContext(component);
 
         // Act
-        await editContext.ValidateAsync(["Names"]);
+        await editContext.ValidateAsync(["Names"], Xunit.TestContext.Current.CancellationToken);
 
         // Assert - Rule set property should be set during validation and cleaned up after
         var hasProperty = editContext.Properties.TryGetValue(FluentValidator.RuleSetProperty, out _);
@@ -387,11 +387,11 @@ public class EditContextExtensionsTests : BunitContext
             EmailAddress = "test@example.com",
             Address = CreateValidAddress()
         };
-        var component = CreateComponentWithValidator(person, _personValidator, asyncMode: true);
+        var component = CreateComponentWithValidator(person, _personValidator);
         var editContext = GetEditContext(component);
 
         // Act
-        await editContext.ValidateAsync(["Names", "OtherRuleSet"]);
+        await editContext.ValidateAsync(["Names", "OtherRuleSet"], Xunit.TestContext.Current.CancellationToken);
 
         // Assert - Rule set property should be cleaned up
         var hasProperty = editContext.Properties.TryGetValue(FluentValidator.RuleSetProperty, out _);
@@ -444,7 +444,7 @@ public class EditContextExtensionsTests : BunitContext
             EmailAddress = "test@example.com",
             Address = CreateValidAddress()
         };
-        var component = CreateComponentWithValidator(person, _personValidator, asyncMode: true);
+        var component = CreateComponentWithValidator(person, _personValidator);
         var editContext = GetEditContext(component);
 
         var ruleSetWasSet = false;
@@ -458,7 +458,7 @@ public class EditContextExtensionsTests : BunitContext
         };
 
         // Act
-        await editContext.ValidateAsync(["Names"]);
+        await editContext.ValidateAsync(["Names"], Xunit.TestContext.Current.CancellationToken);
 
         // Assert
         ruleSetWasSet.Should().BeTrue("Rule set should have been set in properties during validation");
@@ -483,13 +483,11 @@ public class EditContextExtensionsTests : BunitContext
 
     private IRenderedComponent<TestFormComponent<TModel>> CreateComponentWithValidator<TModel>(
         TModel model,
-        IValidator validator,
-        bool asyncMode = false)
+        IValidator validator)
     {
         return Render<TestFormComponent<TModel>>(parameters => parameters
             .Add(p => p.Model, model)
-            .Add(p => p.Validator, validator)
-            .Add(p => p.AsyncMode, asyncMode));
+            .Add(p => p.Validator, validator));
     }
 
     private static EditContext GetEditContext<TModel>(IRenderedComponent<TestFormComponent<TModel>> component)
@@ -511,9 +509,6 @@ internal class TestFormComponent<TModel> : ComponentBase
     [Parameter]
     public IValidator? Validator { get; set; }
 
-    [Parameter]
-    public bool AsyncMode { get; set; }
-
     public EditContext? EditContext { get; private set; }
 
     protected override void OnInitialized()
@@ -534,7 +529,6 @@ internal class TestFormComponent<TModel> : ComponentBase
                 {
                     formBuilder.AddAttribute(1, "Validator", Validator);
                 }
-                formBuilder.AddAttribute(2, "AsyncMode", AsyncMode);
                 formBuilder.CloseComponent();
             };
         }));

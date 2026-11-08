@@ -339,7 +339,6 @@
         await Task.Delay(500);
 
         isSubmitted = true;
-        StateHasChanged();
     }
 
 
@@ -350,8 +349,6 @@
         isSubmitted = false;
         newSkill = "";
         newProjectId = null;
-
-        StateHasChanged();
     }
 
     private void AddSkill()
@@ -366,8 +363,6 @@
         // Notify the EditContext that the Skills field has changed
         var field = FieldIdentifier.Create(() => employee.Skills);
         editForm?.EditContext?.NotifyFieldChanged(field);
-
-        StateHasChanged();
     }
 
     private void RemoveSkill(string skill)
@@ -394,7 +389,6 @@
         editForm?.EditContext?.NotifyFieldChanged(field);
 
         newProjectId = null;
-        StateHasChanged();
     }
 
     private void RemoveProject(int projectId)

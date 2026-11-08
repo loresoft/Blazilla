@@ -1,6 +1,6 @@
-using BlazorShared.Models;
-using BlazorShared.Pages;
-using BlazorShared.Validators;
+using Blazilla.Tests.Models;
+using Blazilla.Tests.Pages;
+using Blazilla.Tests.Validators;
 
 namespace Blazilla.Tests;
 

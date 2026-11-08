@@ -12,7 +12,7 @@
 
             <p class="lead text-muted mb-4">
                 A powerful library for seamless integration between FluentValidation and Blazor's EditForm component.
-                Perfect for both Blazor Server and Blazor WebAssembly applications.
+                Perfect for both Blazor Server and Blazor WebAssembly applications on .NET 8, .NET 9, .NET 10, and .NET 11.
             </p>
         </div>
     </div>
@@ -70,7 +70,7 @@
                     <div class="feature-card p-4 text-center">
                         <i class="bi bi-clock-fill display-4 text-info mb-3"></i>
                         <h5>Async Validation</h5>
-                        <p class="text-muted">Built-in support for asynchronous validation rules and background checks.</p>
+                        <p class="text-muted">Async rules work with no extra configuration. On .NET 11, EditForm waits for async rules before OnValidSubmit.</p>
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -125,8 +125,17 @@
                     <h4 class="card-title text-primary">
                         <i class="bi bi-clock-fill me-2"></i>Asynchronous Validation
                     </h4>
-                    <p>Enable async validation for database checks, API calls, and other asynchronous operations:</p>
+                    <p>
+                        Use async rules for database checks, API calls, and other asynchronous operations.
+                        On .NET 11, <code>EditForm</code> awaits all validation, including async rules, before it invokes
+                        <code>OnValidSubmit</code>:
+                    </p>
                     <pre class="bg-dark text-light p-3 rounded"><code>@asyncValidationExample</code></pre>
+                    <p>
+                        On .NET 8, .NET 9, and .NET 10, <code>EditForm</code> validates synchronously, so use
+                        <code>OnSubmit</code> and await <code>ValidateAsync</code> instead. This pattern also works on .NET 11:
+                    </p>
+                    <pre class="bg-dark text-light p-3 rounded"><code>@asyncValidationLegacyExample</code></pre>
                 </div>
 
                 <div class="col-12">
@@ -198,10 +207,10 @@
                             <td><code>AsyncMode</code></td>
                             <td><code>bool</code></td>
                             <td><code>false</code></td>
-                            <td>
-								Enables asynchronous validation mode for validators containing async rules (MustAsync,
-                                etc.). When enabled, validation will be performed asynchronously and may show a brief
-                                delay for async operations like database checks.
+							<td>
+								<strong>Obsolete since 3.0 and ignored.</strong> Async rules are supported automatically,
+								so remove this parameter. See the
+								<a href="https://github.com/loresoft/Blazilla/blob/main/MIGRATION.md" target="_blank">migration guide</a>.
 							</td>
                         </tr>
                         <tr>
@@ -240,9 +249,9 @@
                         <code class="small">&lt;EditForm Model="@@model"&gt;&lt;FluentValidator /&gt;&lt;/EditForm&gt;</code>
                     </div>
                     <div>
-                        <h6 class="fw-bold">Invalid form submits with AsyncMode</h6>
-                        <p class="small text-muted mb-2">Use OnSubmit instead of OnValidSubmit with async validation:</p>
-                        <code class="small">&lt;EditForm OnSubmit="@@HandleSubmit"&gt;&lt;FluentValidator AsyncMode="true" /&gt;&lt;/EditForm&gt;</code>
+                        <h6 class="fw-bold">AsyncValidatorInvokedSynchronouslyException on submit (.NET 8–10)</h6>
+                        <p class="small text-muted mb-2">Use OnSubmit and await ValidateAsync, or target .NET 11 and use OnValidSubmit:</p>
+                        <code class="small">&lt;EditForm OnSubmit="@@HandleSubmit"&gt;&lt;FluentValidator /&gt;&lt;/EditForm&gt;</code>
                     </div>
                 </div>
             </div>
@@ -273,10 +282,10 @@
                         </li>
                         <li class="mb-2">
                             <i class="bi bi-check-circle-fill text-success me-2"></i>
-                            <strong>Enable async mode only when needed</strong> - Use AsyncMode="true" only for
-                            validators containing MustAsync rules. Async validation should be reserved for operations
-                            like database uniqueness checks, API calls, or external service validations that truly
-                            require asynchronous execution.
+                            <strong>Forward cancellation tokens in async rules</strong> - Pass the
+                            <code>CancellationToken</code> from <code>MustAsync</code> to the I/O your rule performs.
+                            On .NET 11, Blazilla cancels a field's pending validation when the field is edited again,
+                            and cancels pending field validations when the form is submitted.
                         </li>
                         <li class="mb-0">
                             <i class="bi bi-check-circle-fill text-success me-2"></i>
@@ -375,9 +384,58 @@ builder.Services.AddSingleton<IValidator<Person>, PersonValidator>();";
     <button type=""submit"" class=""btn btn-primary"">Submit</button>
 </EditForm>";
 
-    private string asyncValidationExample = @"<!-- Use OnSubmit instead of OnValidSubmit for async validation -->
+    private string asyncValidationExample = @"<!-- .NET 11: OnValidSubmit waits for async rules -->
+<EditForm EditContext=""@editContext"" OnValidSubmit=""@HandleValidSubmit"">
+    <FluentValidator />
+
+    <div class=""mb-3"">
+        <InputText @bind-Value=""person.EmailAddress"" class=""form-control"" />
+        @if (editContext.IsValidationPending(() => person.EmailAddress))
+        {
+            <div class=""form-text"">Checking availability...</div>
+        }
+        <ValidationMessage For=""@(() => person.EmailAddress)"" />
+    </div>
+
+    @if (editContext.IsValidationFaulted())
+    {
+        <div class=""alert alert-danger"">Validation couldn't complete. Please try again.</div>
+    }
+
+    <button type=""submit"" class=""btn btn-primary"" disabled=""@editContext.IsValidationPending()"">
+        Submit
+    </button>
+</EditForm>
+
+@code {
+    private Person person = new();
+    private EditContext editContext = default!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(person);
+        // re-render when async validation starts and completes
+        editContext.OnValidationStateChanged += (_, _) => InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        // All validation, including async rules, has passed
+        await ProcessValidForm();
+    }
+}
+
+// In your validator - async validation rule
+RuleFor(p => p.EmailAddress)
+    .MustAsync(async (email, cancellationToken) =>
+    {
+        await Task.Delay(500, cancellationToken); // Simulate API call
+        return !email?.Equals(""admin@example.com"") ?? true;
+    }).WithMessage(""Email address is not available"");";
+
+    private string asyncValidationLegacyExample = @"<!-- .NET 8-10: use OnSubmit and await ValidateAsync -->
 <EditForm Model=""@person"" OnSubmit=""@HandleSubmit"">
-    <FluentValidator AsyncMode=""true"" />
+    <FluentValidator />
 
     <div class=""mb-3"">
         <InputText @bind-Value=""person.EmailAddress"" class=""form-control"" />
@@ -395,7 +453,6 @@ builder.Services.AddSingleton<IValidator<Person>, PersonValidator>();";
     private async Task HandleSubmit(EditContext editContext)
     {
         isSubmitting = true;
-        StateHasChanged();
 
         try
         {
@@ -411,18 +468,9 @@ builder.Services.AddSingleton<IValidator<Person>, PersonValidator>();";
         finally
         {
             isSubmitting = false;
-            StateHasChanged();
         }
     }
-}
-
-// In your validator - async validation rule
-RuleFor(p => p.EmailAddress)
-    .MustAsync(async (email, cancellation) =>
-    {
-        await Task.Delay(500, cancellation); // Simulate API call
-        return !email?.Equals(""admin@example.com"") ?? true;
-    }).WithMessage(""Email address is not available"");";
+}";
 
     private string ruleSetsExample = @"// In your validator
 RuleSet(""Create"", () => {

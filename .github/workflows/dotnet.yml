@@ -41,7 +41,9 @@ jobs:
       - name: Install .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.x
+          dotnet-version: |
+            10.x
+            11.x
 
       - name: Restore Dependencies
         run: dotnet restore

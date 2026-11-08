@@ -1,20 +1,27 @@
 @page "/person"
+@implements IDisposable
 
 <h3>Overview</h3>
 <p>
-    This example demonstrates advanced FluentValidation features in Blazor, specifically showcasing
-    <code>AsyncMode="true"</code> and <code>AllRules="true"</code> on the FluentValidator component.
-    The <strong>AsyncMode</strong> enables asynchronous validation rules (like email uniqueness checks),
-    while <strong>AllRules</strong> ensures all validation rules are executed and displayed,
-    not just the first failing rule per property.
+    This example demonstrates asynchronous validation using the native async form validation in .NET 11.
+    The email address has a <code>MustAsync</code> uniqueness rule. Because <code>EditForm</code> awaits
+    <code>EditContext.ValidateAsync()</code> on .NET 11, the form uses <code>OnValidSubmit</code> and
+    <code>OnInvalidSubmit</code>, and the submit handler runs only after every rule, including async rules, has completed.
+    Editing the email again cancels the pending uniqueness check.
+</p>
+<p>
+    The form uses <code>AllRules="true"</code> so all validation rules are executed and displayed,
+    not just the first failing rule per property. It also uses the .NET 11 <code>IsValidationPending</code>
+    and <code>IsValidationFaulted</code> APIs to show validation progress and errors.
 </p>
 
 <h3>Person Form</h3>
 
-<EditForm Model="@person"
-          OnSubmit="@HandleSubmit">
+<EditForm EditContext="@editContext"
+          OnValidSubmit="@HandleValidSubmit"
+          OnInvalidSubmit="@HandleInvalidSubmit">
 
-    <FluentValidator AsyncMode="true" AllRules="true" />
+    <FluentValidator AllRules="true" />
 
     <div class="row">
         <div class="col-md-6">
@@ -64,6 +71,13 @@
                            placeholder="john.doe@example.com"
                            type="email" />
                 <ValidationMessage For="@(() => person.EmailAddress)" />
+                @if (editContext.IsValidationPending(() => person.EmailAddress))
+                {
+                    <div id="email-pending" class="form-text">
+                        <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                        Checking availability...
+                    </div>
+                }
                 <div class="form-text">Note: 'mail@my.com' is not allowed (uniqueness validation).</div>
             </div>
         </div>
@@ -143,12 +157,26 @@
     <div class="row mt-3">
         <div class="col-12">
             <button type="submit"
-                    class="btn btn-primary me-2">Submit</button>
+                    class="btn btn-primary me-2"
+                    disabled="@editContext.IsValidationPending()">
+                @(editContext.IsValidationPending() ? "Validating..." : "Submit")
+            </button>
             <button type="button"
                     class="btn btn-secondary"
                     @onclick="ResetForm">Reset</button>
         </div>
     </div>
+
+    @if (editContext.IsValidationFaulted())
+    {
+        <div class="row mt-3">
+            <div class="col-12">
+                <div id="validation-faulted" class="alert alert-danger" role="alert">
+                    Validation couldn't complete. Please try again.
+                </div>
+            </div>
+        </div>
+    }
 
     <div class="row mt-3">
         <div class="col-12">
@@ -202,20 +230,51 @@
 
 @code {
     private Person person = new() { Address = new() };
+    private EditContext editContext = default!;
 
     private bool isSubmitted = false;
 
-    private async Task HandleSubmit(EditContext editContext)
+    protected override void OnInitialized()
     {
-        // support async validation
-        var valid = await editContext.ValidateAsync();
+        CreateEditContext();
+    }
 
-        isSubmitted = valid;
+    private void CreateEditContext()
+    {
+        if (editContext is not null)
+            editContext.OnValidationStateChanged -= HandleValidationStateChanged;
+
+        editContext = new EditContext(person);
+        editContext.OnValidationStateChanged += HandleValidationStateChanged;
+    }
+
+    // Raised when async validation starts and completes; re-render to update the pending and faulted state
+    private void HandleValidationStateChanged(object? sender, ValidationStateChangedEventArgs e)
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleValidSubmit()
+    {
+        // EditForm has already awaited all validation, including async rules
+        isSubmitted = true;
+    }
+
+    private void HandleInvalidSubmit()
+    {
+        isSubmitted = false;
     }
 
     private void ResetForm()
     {
         person = new Person { Address = new() };
         isSubmitted = false;
+
+        CreateEditContext();
+    }
+
+    public void Dispose()
+    {
+        editContext.OnValidationStateChanged -= HandleValidationStateChanged;
     }
 }

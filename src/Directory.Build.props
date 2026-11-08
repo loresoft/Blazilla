@@ -35,6 +35,7 @@
 
   <PropertyGroup>
     <MinVerTagPrefix>v</MinVerTagPrefix>
+    <MinVerMinimumMajorMinor>3.0</MinVerMinimumMajorMinor>
   </PropertyGroup>
 
   <ItemGroup>

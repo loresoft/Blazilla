@@ -16,7 +16,9 @@ Blazilla provides seamless integration between [FluentValidation](https://fluent
 - **Real-time validation** - Validate fields as users type or change values
 - **Form-level validation** - Full model validation on form submission
 - **Nested object validation** - Support for complex object hierarchies
-- **Asynchronous validation** - Built-in support for async validation rules
+- **Asynchronous validation** - Built-in support for async validation rules, with no extra configuration
+- **Native .NET 11 async form validation** - `EditForm` waits for async rules before `OnValidSubmit` runs
+- **Cancellation** - Superseded field validations are canceled on .NET 11
 - **Rule sets** - Execute specific groups of validation rules
 - **Custom validator selectors** - Fine-grained control over which rules to execute
 - **Dependency injection integration** - Automatic validator resolution from DI container
@@ -35,6 +37,10 @@ Or via Package Manager Console:
 ```bash
 Install-Package Blazilla
 ```
+
+Blazilla supports .NET 8, .NET 9, .NET 10, and .NET 11.
+
+> **Upgrading from Blazilla 2.x?** Version 3.0 adds .NET 11 support, makes the `AsyncMode` parameter obsolete, and changes how asynchronous validation runs. See the [Migration Guide from 2.x to 3.0](MIGRATION.md).
 
 ## Quick Start
 
@@ -164,17 +170,115 @@ await builder.Build().RunAsync();
 }
 ```
 
+> **Note**: If your validators contain async rules (such as `MustAsync`) and your app targets .NET 8, 9, or 10, see [Asynchronous Validation](#asynchronous-validation).
+
 ## Advanced Usage
 
 ### Asynchronous Validation
 
-Blazor's built-in validation system doesn't natively support asynchronous validation. When using async validation rules with FluentValidation, you need to handle form submission manually to ensure async validation completes before the form is submitted.
+Blazilla supports FluentValidation's async rules (`MustAsync`, `CustomAsync`, and so on) with no extra configuration. Field-level validation always runs through FluentValidation's asynchronous pipeline. How you handle form submission depends on your target framework.
 
-Enable asynchronous validation mode and use `OnSubmit` instead of `OnValidSubmit` to properly handle async validation:
+Create a validator with async rules:
+
+```csharp
+public class PersonValidator : AbstractValidator<Person>
+{
+    public PersonValidator()
+    {
+        RuleFor(p => p.EmailAddress)
+            .NotEmpty().WithMessage("Email is required")
+            .EmailAddress().WithMessage("Please provide a valid email address")
+            .MustAsync(async (email, cancellationToken) =>
+            {
+                // Simulate async validation (e.g., database check)
+                await Task.Delay(500, cancellationToken);
+                return !email?.Equals("admin@example.com", StringComparison.OrdinalIgnoreCase) ?? true;
+            }).WithMessage("This email address is not available");
+    }
+}
+```
+
+> **Tip**: Always forward the `CancellationToken` to your async rules and the I/O they perform. On .NET 11, Blazilla cancels a field validation when the user edits the field again, and cancels pending field validations when the form is submitted.
+
+#### .NET 11 and later
+
+.NET 11 adds native asynchronous form validation. Blazilla registers its validation with the `EditContext`, so `EditForm` waits for all validation, including async rules, before it invokes `OnValidSubmit` or `OnInvalidSubmit`. Use `OnValidSubmit` as you would with synchronous rules:
+
+```razor
+<EditForm Model="@person" OnValidSubmit="@HandleValidSubmit">
+    <FluentValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <InputText id="email" class="form-control" @bind-Value="person.EmailAddress" />
+        <ValidationMessage For="@(() => person.EmailAddress)" />
+    </div>
+
+    <button type="submit" class="btn btn-primary">Submit</button>
+</EditForm>
+
+@code {
+    private Person person = new();
+
+    private async Task HandleValidSubmit()
+    {
+        // All validation, including async rules, has passed
+        await SaveAsync();
+    }
+}
+```
+
+On .NET 11, you can also use the native `EditContext` APIs to show validation progress and errors:
+
+- `IsValidationPending(() => person.EmailAddress)` returns `true` while a field's async validation is running.
+- `IsValidationPending()` returns `true` while form-level validation is running.
+- `IsValidationFaulted()` returns `true` if a validator threw an exception during the last form validation. In this case, `ValidateAsync` returns `false`, even if there are no validation messages.
+
+```razor
+<EditForm EditContext="@editContext" OnValidSubmit="@HandleValidSubmit">
+    <FluentValidator />
+
+    <InputText @bind-Value="person.EmailAddress" />
+    @if (editContext.IsValidationPending(() => person.EmailAddress))
+    {
+        <span class="text-muted">Checking availability...</span>
+    }
+    <ValidationMessage For="@(() => person.EmailAddress)" />
+
+    @if (editContext.IsValidationFaulted())
+    {
+        <div class="alert alert-danger">Validation couldn't complete. Please try again.</div>
+    }
+
+    <button type="submit" disabled="@editContext.IsValidationPending()">Submit</button>
+</EditForm>
+
+@code {
+    private Person person = new();
+    private EditContext editContext = default!;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(person);
+
+        // Re-render when async validation starts and completes
+        editContext.OnValidationStateChanged += (_, _) => InvokeAsync(StateHasChanged);
+    }
+}
+```
+
+> **Note**: `EditContext` raises `OnValidationStateChanged` when async validation starts and when it completes. Subscribe to it, as shown above, so the component that reads `IsValidationPending` or `IsValidationFaulted` re-renders. Unsubscribe in `Dispose` if the `EditContext` can outlive the component. See the [Person form sample](samples/BlazorShared/Pages/PersonForm.razor) for a complete example.
+
+#### .NET 8, .NET 9, and .NET 10
+
+On .NET 8–10, Blazor's built-in `EditForm` validates synchronously before it invokes `OnValidSubmit`, so it can't wait for async rules. If a validator with async rules runs synchronously, FluentValidation throws `AsyncValidatorInvokedSynchronouslyException`.
+
+Use `OnSubmit` instead of `OnValidSubmit`, and await `ValidateAsync`. This pattern also works on .NET 11, so use it in code that multi-targets:
 
 ```razor
 <EditForm Model="@person" OnSubmit="@HandleSubmit">
-    <FluentValidator AsyncMode="true" />
+    <FluentValidator />
     <ValidationSummary />
     
     <div class="mb-3">
@@ -225,39 +329,19 @@ Enable asynchronous validation mode and use `OnSubmit` instead of `OnValidSubmit
 }
 ```
 
-Create a validator with async rules:
+`ValidateAsync` runs form-level validation asynchronously, waits for every rule (sync and async) to complete, and returns `true` only when there are no validation messages.
 
-```csharp
-public class PersonValidator : AbstractValidator<Person>
-{
-    public PersonValidator()
-    {
-        RuleFor(p => p.EmailAddress)
-            .NotEmpty().WithMessage("Email is required")
-            .EmailAddress().WithMessage("Please provide a valid email address")
-            .MustAsync(async (email, cancellation) => 
-            {
-                // Simulate async validation (e.g., database check)
-                await Task.Delay(500, cancellation);
-                return !email?.Equals("admin@example.com", StringComparison.OrdinalIgnoreCase) ?? true;
-            }).WithMessage("This email address is not available");
-    }
-}
-```
+> **Important**: On .NET 8–10, use `OnSubmit` with `ValidateAsync` instead of `OnValidSubmit` when validators contain async rules. On .NET 11, `OnValidSubmit` works with async rules.
 
-#### Why This Approach is Necessary
+#### EditContext Extension Methods
 
-Blazor's `OnValidSubmit` event fires immediately after synchronous validation passes, without waiting for async validation to complete. This can result in forms being submitted with incomplete validation results. 
-
-The `EditContextExtensions.ValidateAsync()` method:
-
-1. Triggers synchronous validation first (which may initiate async validation tasks)
-2. Waits for any pending async validation tasks to complete
-3. Returns `true` only when all validation (sync and async) has passed
-
-This ensures that form submission is properly prevented when async validation rules fail.
-
-> **Important**: Always use `OnSubmit` instead of `OnValidSubmit` when working with async validation rules. The `OnValidSubmit` event doesn't wait for async validation to complete.
+| Method | Description |
+| ------ | ----------- |
+| `ValidateAsync()` | Validates the form and waits for all async rules to complete. On .NET 11, this calls the native `EditContext.ValidateAsync()`. |
+| `ValidateAsync(CancellationToken)` | Same as `ValidateAsync()`, with cancellation. On .NET 11, this calls the native method. On .NET 8–10, the token isn't observed. |
+| `ValidateAsync(params IEnumerable<string> ruleSets)` | Validates the form with the specified rule sets, overriding the component's `RuleSets`. |
+| `ValidateAsync(IEnumerable<string>? ruleSets, CancellationToken)` | Validates the form with the specified rule sets and cancellation. |
+| `Validate(params IEnumerable<string> ruleSets)` | Validates the form synchronously. Doesn't support async rules. Obsolete on .NET 11. |
 
 ### Rule Sets
 
@@ -293,6 +377,16 @@ public class PersonValidator : AbstractValidator<Person>
 
 <!-- Execute all rules including those in rule sets -->
 <FluentValidator AllRules="true" />
+```
+
+To use different rule sets for a single validation call, pass them to `ValidateAsync`. They override the component's `RuleSets` for that call only:
+
+```csharp
+// Validate using only the "Create" rule set
+var isValid = await editContext.ValidateAsync("Create");
+
+// With cancellation
+var isValid = await editContext.ValidateAsync(["Create"], cancellationToken);
 ```
 
 ### Nested Object Validation
@@ -446,24 +540,23 @@ The `FluentValidator` component supports the following parameters:
 | `Validator` | `IValidator?`          | `null`  | The FluentValidation validator instance to use. If not provided, the component will attempt to resolve a validator from the dependency injection container based on the EditForm's model type.                                      |
 | `RuleSets`  | `IEnumerable<string>?` | `null`  | Collection of rule set names to execute. Only validation rules within the specified rule sets will be executed. Use this to run targeted validation scenarios (e.g., "Create", "Update", "Profile").                                |
 | `AllRules`  | `bool`                 | `false` | When true, executes all validation rules including those defined within rule sets. When false (default), only executes rules not in any rule set plus any specified in the RuleSets parameter.                                      |
-| `AsyncMode` | `bool`                 | `false` | Enables asynchronous validation mode for validators containing async rules (MustAsync, etc.). When enabled, validation will be performed asynchronously and may show a brief delay for async operations like database checks.       |
+| `AsyncMode` | `bool`                 | `false` | **Obsolete since 3.0 and ignored.** Async rules are supported automatically. Remove this parameter. See the [Migration Guide](MIGRATION.md).                                                                                       |
 | `Selector`  | `IValidatorSelector?`  | `null`  | Custom validator selector implementation for advanced scenarios requiring fine-grained control over which validation rules execute. Allows conditional rule execution based on custom logic, property paths, or validation context. |
 
 ## Validation Behavior
 
-- **Field-level validation**: Triggered when individual form fields change
-- **Form-level validation**: Triggered when the form is submitted via `OnValidSubmit`
-- **Real-time feedback**: Validation messages appear immediately as users interact with the form
-- **Integration with EditContext**: Works seamlessly with Blazor's built-in validation system
+- **Field-level validation**: Triggered when individual form fields change. Runs asynchronously, so both synchronous and async rules are supported. The field's messages are cleared when validation starts and updated when it completes. On .NET 11, editing a field again cancels its pending validation.
+- **Form-level validation**: Triggered on form submission or by calling `ValidateAsync`. Runs asynchronously when requested through `ValidateAsync` (including `EditForm` submission on .NET 11), and synchronously when requested through `EditContext.Validate()` (including `EditForm` submission on .NET 8–10).
+- **Real-time feedback**: Validation messages appear as users interact with the form
+- **Integration with EditContext**: Works seamlessly with Blazor's built-in validation system, including native async validation on .NET 11
 
 ## Performance Considerations
 
 - Validators should be registered as singletons in the DI container since they are stateless and can be safely shared across requests/components
 - Validators are cached and reused when resolved from dependency injection
 - Validation contexts are created without runtime expression compilation so they can run in AOT environments
-- Asynchronous validation executes async validators directly, ensuring responsive UI performance
-
-> **AsyncMode**: Only enable `AsyncMode="true"` when your validators contain actual async rules (like `MustAsync`). Using async mode with purely synchronous validators introduces unnecessary overhead from async state machine generation and task scheduling, even though the validation logic itself is synchronous
+- Async rules run through FluentValidation's `ValidateAsync`, so slow checks don't block the UI
+- Forward the `CancellationToken` to async rules so canceled validations stop work early
 
 ## Integration Details
 
@@ -557,21 +650,20 @@ PathResolver.AddIgnoredType(typeof(CustomComponentBase));
 
 ### Blazor Forms and Async Validation Limitations
 
-**Important**: Blazor's built-in form validation system has inherent limitations with asynchronous validation:
+**.NET 11 and later**: Blazor supports asynchronous form validation natively. `EditForm` awaits `EditContext.ValidateAsync()` before it invokes `OnValidSubmit` or `OnInvalidSubmit`, and Blazilla registers its validation with the `EditContext`. No workaround is needed. The synchronous `EditContext.Validate()` method is obsolete in .NET 11.
 
-1. **OnValidSubmit Event Timing**: The `OnValidSubmit` event fires immediately after synchronous validation passes, without waiting for any asynchronous validation operations to complete.
+**.NET 8, .NET 9, and .NET 10**: Blazor's built-in form validation is synchronous:
 
-2. **EditContext.Validate() Behavior**: The standard `EditContext.Validate()` method only performs synchronous validation and doesn't trigger or wait for async validation rules.
+1. **OnValidSubmit Event Timing**: `EditForm` calls the synchronous `EditContext.Validate()` before it invokes `OnValidSubmit`, so it can't wait for async rules.
 
-**Workaround for Async Validation**:
+2. **EditContext.Validate() Behavior**: `EditContext.Validate()` runs validation synchronously. FluentValidation throws `AsyncValidatorInvokedSynchronouslyException` if a validator with async rules runs synchronously.
 
-When using validators with async rules (`MustAsync`, custom async validators), you must:
+**Workaround for .NET 8–10**: When validators contain async rules (`MustAsync`, custom async validators):
 
-- Enable `AsyncMode="true"` on the `FluentValidator` component
 - Use `OnSubmit` instead of `OnValidSubmit`
-- Call `EditContextExtensions.ValidateAsync()` to ensure async validation completes
+- Call `await editContext.ValidateAsync()` to ensure async validation completes before you process the form
 
-This limitation is a fundamental aspect of Blazor's validation architecture and affects all validation libraries, not just FluentValidation integrations.
+This limitation is part of Blazor's validation architecture before .NET 11 and affects all validation libraries, not just FluentValidation integrations.
 
 ## Migration Guide from Blazored.FluentValidation
 
@@ -583,7 +675,7 @@ If you're currently using [Blazored.FluentValidation](https://github.com/Blazore
 | ------------------------- | ------------------------------------------------- | -------------------------------------------------- |
 | Component Name            | `<FluentValidationValidator />`                   | `<FluentValidator />`                              |
 | Validator Discovery       | Automatic assembly scanning, DI, or explicit pass | Requires DI registration or explicit pass          |
-| Async Validation Support  | Limited, requires workarounds                     | Built-in with `AsyncMode` parameter                |
+| Async Validation Support  | Limited, requires workarounds                     | Built-in; native `OnValidSubmit` on .NET 11        |
 | Nested Object Validation  | Limited (doesn't support all scenarios)           | Fully supported with improved path resolution      |
 | Rule Sets                 | Supported via `RuleSet` parameter                 | Supported via `RuleSets` and `AllRules` parameters |
 | Custom Validator Selector | Not supported                                     | Supported via `Selector` parameter                 |
@@ -697,11 +789,21 @@ Blazilla has improved async validation support. Update your components:
 }
 ```
 
-**After (Blazilla - built-in support):**
+**After (Blazilla on .NET 11 - native support):**
+
+```razor
+<EditForm Model="@model" OnValidSubmit="@ProcessForm">
+    <FluentValidator />
+    <!-- form fields -->
+    <button type="submit">Submit</button>
+</EditForm>
+```
+
+**After (Blazilla on .NET 8–10 - built-in support):**
 
 ```razor
 <EditForm Model="@model" OnSubmit="@HandleSubmit">
-    <FluentValidator AsyncMode="true" />
+    <FluentValidator />
     <!-- form fields -->
     <button type="submit" disabled="@isSubmitting">Submit</button>
 </EditForm>
@@ -835,24 +937,22 @@ FluentValidator requires a cascading parameter of type EditContext.
 </EditForm>
 ```
 
-**Invalid form submits when using AsyncMode**
+**AsyncValidatorInvokedSynchronouslyException on submit (.NET 8–10)**
 
-When using `AsyncMode="true"`, forms may submit even when async validation fails if you're using `OnValidSubmit` instead of `OnSubmit`.
+**Problem**: On .NET 8–10, `OnValidSubmit` runs synchronous validation, which can't run async rules such as `MustAsync`.
 
-**Problem**: `OnValidSubmit` fires immediately after synchronous validation passes, without waiting for async validation to complete.
-
-**Solution**: Use `OnSubmit` with `EditContextExtensions.ValidateAsync()`:
+**Solution**: Use `OnSubmit` with `EditContextExtensions.ValidateAsync()`, or target .NET 11, where `OnValidSubmit` supports async rules:
 
 ```razor
-<!-- ❌ Incorrect - Don't use OnValidSubmit with async validation -->
+<!-- ❌ Incorrect on .NET 8-10 - OnValidSubmit can't run async rules -->
 <EditForm Model="@model" OnValidSubmit="@HandleValidSubmit">
-    <FluentValidator AsyncMode="true" />
+    <FluentValidator />
     <!-- form fields -->
 </EditForm>
 
-<!-- ✅ Correct - Use OnSubmit with ValidateAsync -->
+<!-- ✅ Correct on all frameworks - Use OnSubmit with ValidateAsync -->
 <EditForm Model="@model" OnSubmit="@HandleSubmit">
-    <FluentValidator AsyncMode="true" />
+    <FluentValidator />
     <!-- form fields -->
 </EditForm>
 
@@ -870,6 +970,10 @@ When using `AsyncMode="true"`, forms may submit even when async validation fails
     }
 }
 ```
+
+**CS0618 warning: `AsyncMode` or `Validate` is obsolete**
+
+**Solution**: Remove the `AsyncMode` parameter from `FluentValidator`; async rules run automatically. On .NET 11, replace `editContext.Validate(...)` with `await editContext.ValidateAsync(...)`. See the [Migration Guide from 2.x to 3.0](MIGRATION.md).
 
 ## Contributing
 

@@ -655,7 +655,6 @@
         await Task.Delay(500);
 
         isSubmitted = true;
-        StateHasChanged();
     }
 
     private void ResetForm()
@@ -668,6 +667,5 @@
         InitializeForm();
 
         isSubmitted = false;
-        StateHasChanged();
     }
 }

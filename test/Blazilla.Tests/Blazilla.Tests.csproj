@@ -1,13 +1,15 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+<Project Sdk="Microsoft.NET.Sdk.Razor">
 
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
     <OutputType>Exe</OutputType>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+    <!-- Tests intentionally exercise obsolete APIs for compatibility coverage -->
+    <NoWarn>$(NoWarn);CS0612;CS0618</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Label="Debug">
@@ -22,12 +24,20 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\samples\BlazorShared\BlazorShared.csproj" />
     <ProjectReference Include="..\..\src\Blazilla\Blazilla.csproj" />
   </ItemGroup>
 
+  <!-- Framework-specific form components: .NET 11 uses native async EditForm validation -->
+  <ItemGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <Content Remove="Pages\Net11\**" />
+    <None Include="Pages\Net11\**" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net11.0'">
+    <Content Remove="Pages\Net10\**" />
+    <None Include="Pages\Net10\**" />
+  </ItemGroup>
+
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" />
     <Using Include="AwesomeAssertions" />
     <Using Include="Bunit" />
     <Using Include="Bunit.TestDoubles" />

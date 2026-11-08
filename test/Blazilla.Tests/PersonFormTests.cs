@@ -1,6 +1,6 @@
-using BlazorShared.Models;
-using BlazorShared.Pages;
-using BlazorShared.Validators;
+using Blazilla.Tests.Models;
+using Blazilla.Tests.Pages;
+using Blazilla.Tests.Validators;
 
 namespace Blazilla.Tests;
 
@@ -244,4 +244,20 @@ public class PersonFormTests : BunitContext
             component.Markup.Should().Contain(PersonValidator.EmailUnique);
         }, TimeSpan.FromSeconds(1));
     }
+
+#if NET11_0_OR_GREATER
+    [Fact]
+    public void PersonForm_ShowsPendingIndicator_WhileEmailUniquenessCheckRuns()
+    {
+        // Arrange
+        var component = Render<PersonForm>();
+
+        // Act - Enter a valid email so the async uniqueness rule runs
+        component.Find("#email").Change("john.doe@example.com");
+
+        // Assert - Pending indicator is shown while the async rule runs, then removed
+        component.WaitForAssertion(() => component.FindAll("#email-pending").Should().ContainSingle(), TimeSpan.FromSeconds(1));
+        component.WaitForAssertion(() => component.FindAll("#email-pending").Should().BeEmpty(), TimeSpan.FromSeconds(2));
+    }
+#endif
 }
