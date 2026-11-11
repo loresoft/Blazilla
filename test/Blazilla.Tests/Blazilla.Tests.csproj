@@ -32,6 +32,7 @@
     <Content Remove="Pages\Net11\**" />
     <None Include="Pages\Net11\**" />
   </ItemGroup>
+  
   <ItemGroup Condition="'$(TargetFramework)' == 'net11.0'">
     <Content Remove="Pages\Net10\**" />
     <None Include="Pages\Net10\**" />
