@@ -1,0 +1,281 @@
+@page "/person"
+@namespace Blazilla.Tests.Pages
+@implements IDisposable
+
+<h3>Overview</h3>
+<p>
+    This example demonstrates asynchronous validation using the native async form validation in .NET 11.
+    The email address has a <code>MustAsync</code> uniqueness rule. Because <code>EditForm</code> awaits
+    <code>EditContext.ValidateAsync()</code> on .NET 11, the form uses <code>OnValidSubmit</code> and
+    <code>OnInvalidSubmit</code>, and the submit handler runs only after every rule, including async rules, has completed.
+    Editing the email again cancels the pending uniqueness check.
+</p>
+<p>
+    The form uses <code>AllRules="true"</code> so all validation rules are executed and displayed,
+    not just the first failing rule per property. It also uses the .NET 11 <code>IsValidationPending</code>
+    and <code>IsValidationFaulted</code> APIs to show validation progress and errors.
+</p>
+
+<h3>Person Form</h3>
+
+<EditForm EditContext="@editContext"
+          OnValidSubmit="@HandleValidSubmit"
+          OnInvalidSubmit="@HandleInvalidSubmit">
+
+    <FluentValidator AllRules="true" />
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="firstName"
+                       class="form-label">First Name *</label>
+                <InputText id="firstName"
+                           class="form-control"
+                           @bind-Value="person.FirstName"
+                           placeholder="John"
+                           maxlength="50" />
+                <ValidationMessage For="@(() => person.FirstName)" />
+            </div>
+
+            <div class="mb-3">
+                <label for="lastName"
+                       class="form-label">Last Name *</label>
+                <InputText id="lastName"
+                           class="form-control"
+                           @bind-Value="person.LastName"
+                           placeholder="Doe"
+                           maxlength="50" />
+                <ValidationMessage For="@(() => person.LastName)" />
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label for="age"
+                       class="form-label">Age *</label>
+                <InputNumber id="age"
+                             class="form-control"
+                             @bind-Value="person.Age"
+                             placeholder="25"
+                             min="0"
+                             max="149" />
+                <ValidationMessage For="@(() => person.Age)" />
+                <div class="form-text">Age must be between 0 and 149. Note: Age 69 will show a warning.</div>
+            </div>
+
+            <div class="mb-3">
+                <label for="email"
+                       class="form-label">Email Address *</label>
+                <InputText id="email"
+                           class="form-control"
+                           @bind-Value="person.EmailAddress"
+                           placeholder="john.doe@example.com"
+                           type="email" />
+                <ValidationMessage For="@(() => person.EmailAddress)" />
+                @if (editContext.IsValidationPending(() => person.EmailAddress))
+                {
+                    <div id="email-pending" class="form-text">
+                        <span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>
+                        Checking availability...
+                    </div>
+                }
+                <div class="form-text">Note: 'mail@my.com' is not allowed (uniqueness validation).</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <h5>Address Information</h5>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="addressLine1"
+                               class="form-label">Address Line 1 *</label>
+                        <InputText id="addressLine1"
+                                   class="form-control"
+                                   @bind-Value="person.Address!.AddressLine1"
+                                   placeholder="123 Main Street" />
+                        <ValidationMessage For="@(() => person.Address!.AddressLine1)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="addressLine2"
+                               class="form-label">Address Line 2</label>
+                        <InputText id="addressLine2"
+                                   class="form-control"
+                                   @bind-Value="person.Address!.AddressLine2"
+                                   placeholder="Apartment, suite, etc. (optional)" />
+                        <ValidationMessage For="@(() => person.Address!.AddressLine2)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="addressLine3"
+                               class="form-label">Address Line 3</label>
+                        <InputText id="addressLine3"
+                                   class="form-control"
+                                   @bind-Value="person.Address!.AddressLine3"
+                                   placeholder="Additional address information (optional)" />
+                        <ValidationMessage For="@(() => person.Address!.AddressLine3)" />
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="city"
+                               class="form-label">City *</label>
+                        <InputText id="city"
+                                   class="form-control"
+                                   @bind-Value="person.Address!.City"
+                                   placeholder="New York" />
+                        <ValidationMessage For="@(() => person.Address!.City)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="stateProvince"
+                               class="form-label">State/Province *</label>
+                        <InputText id="stateProvince"
+                                   class="form-control"
+                                   @bind-Value="person.Address!.StateProvince"
+                                   placeholder="NY" />
+                        <ValidationMessage For="@(() => person.Address!.StateProvince)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="postalCode"
+                               class="form-label">Postal Code *</label>
+                        <InputText id="postalCode"
+                                   class="form-control"
+                                   @bind-Value="person.Address!.PostalCode"
+                                   placeholder="10001" />
+                        <ValidationMessage For="@(() => person.Address!.PostalCode)" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <button type="submit"
+                    class="btn btn-primary me-2"
+                    disabled="@editContext.IsValidationPending()">
+                @(editContext.IsValidationPending() ? "Validating..." : "Submit")
+            </button>
+            <button type="button"
+                    class="btn btn-secondary"
+                    @onclick="ResetForm">Reset</button>
+        </div>
+    </div>
+
+    @if (editContext.IsValidationFaulted())
+    {
+        <div class="row mt-3">
+            <div class="col-12">
+                <div id="validation-faulted" class="alert alert-danger" role="alert">
+                    Validation couldn't complete. Please try again.
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="row mt-3">
+        <div class="col-12">
+            <ValidationSummary />
+        </div>
+    </div>
+
+    @if (isSubmitted)
+    {
+        <div id="submission-success" class="row mt-4">
+            <div class="col-12">
+                <div class="alert alert-success"
+                     role="alert">
+                    <h4 class="alert-heading">Person Submitted Successfully!</h4>
+                    <p>The person information has been validated and submitted. Here's what you entered:</p>
+                    <hr>
+                    <p class="mb-0">
+                        <strong>Name:</strong> @person.FirstName @person.LastName<br />
+                        <strong>Age:</strong> @person.Age<br />
+                        <strong>Email:</strong> @person.EmailAddress<br />
+
+                        @if (person.Address != null)
+                        {
+                            <strong>Address:</strong>
+                            <br />
+
+                            @person.Address.AddressLine1
+                            <br />
+
+                            @if (!string.IsNullOrWhiteSpace(person.Address.AddressLine2))
+                            {
+                                @person.Address.AddressLine2
+                                <br />
+                            }
+                            @if (!string.IsNullOrWhiteSpace(person.Address.AddressLine3))
+                            {
+                                @person.Address.AddressLine3
+                                <br />
+                            }
+                            <text>
+                                @person.Address.City,
+                                @person.Address.StateProvince @person.Address.PostalCode
+                            </text>
+                        }
+                    </p>
+                </div>
+            </div>
+        </div>
+    }
+</EditForm>
+
+@code {
+    private Person person = new() { Address = new() };
+    private EditContext editContext = default!;
+
+    private bool isSubmitted = false;
+
+    protected override void OnInitialized()
+    {
+        CreateEditContext();
+    }
+
+    private void CreateEditContext()
+    {
+        if (editContext is not null)
+            editContext.OnValidationStateChanged -= HandleValidationStateChanged;
+
+        editContext = new EditContext(person);
+        editContext.OnValidationStateChanged += HandleValidationStateChanged;
+    }
+
+    // Raised when async validation starts and completes; re-render to update the pending and faulted state
+    private void HandleValidationStateChanged(object? sender, ValidationStateChangedEventArgs e)
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleValidSubmit()
+    {
+        // EditForm has already awaited all validation, including async rules
+        isSubmitted = true;
+    }
+
+    private void HandleInvalidSubmit()
+    {
+        isSubmitted = false;
+    }
+
+    private void ResetForm()
+    {
+        person = new Person { Address = new() };
+        isSubmitted = false;
+
+        CreateEditContext();
+    }
+
+    public void Dispose()
+    {
+        editContext.OnValidationStateChanged -= HandleValidationStateChanged;
+    }
+}

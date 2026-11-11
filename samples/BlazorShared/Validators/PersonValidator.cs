@@ -45,16 +45,17 @@ public class PersonValidator : AbstractValidator<Person>
         RuleFor(p => p.EmailAddress)
             .NotEmpty().WithMessage(EmailRequired)
             .EmailAddress().WithMessage(EmailValid)
-            .MustAsync(async (email, _) => await IsUniqueAsync(email)).WithMessage(EmailUnique);
+            .MustAsync(async (email, cancellationToken) => await IsUniqueAsync(email, cancellationToken))
+            .WithMessage(EmailUnique);
 
         RuleFor(p => p.Address!)
             .SetValidator(new AddressValidator())
             .When(p => p.Address is not null);
     }
 
-    private static async Task<bool> IsUniqueAsync(string? email)
+    private static async Task<bool> IsUniqueAsync(string? email, CancellationToken cancellationToken)
     {
-        await Task.Delay(300);
+        await Task.Delay(300, cancellationToken);
         return email?.ToLower() != DuplicateEmail;
     }
 }

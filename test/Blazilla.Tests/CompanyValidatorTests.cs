@@ -1,5 +1,5 @@
-using BlazorShared.Models;
-using BlazorShared.Validators;
+using Blazilla.Tests.Models;
+using Blazilla.Tests.Validators;
 
 using FluentValidation.TestHelper;
 

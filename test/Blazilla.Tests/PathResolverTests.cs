@@ -1,4 +1,4 @@
-using BlazorShared.Models;
+using Blazilla.Tests.Models;
 
 using Microsoft.AspNetCore.Components.Forms;
 

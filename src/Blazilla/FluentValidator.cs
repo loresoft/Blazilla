@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Metadata;
+using System.Runtime.CompilerServices;
 
 using FluentValidation;
 using FluentValidation.Internal;
@@ -25,9 +26,17 @@ namespace Blazilla;
 /// <see cref="Validator"/> parameter.
 /// </para>
 /// <para>
-/// The component supports various validation modes including field-level validation on change,
-/// form-level validation on submit, rule set filtering, and both synchronous and asynchronous
-/// validation modes.
+/// The component supports field-level validation on change, form-level validation on submit,
+/// and rule set filtering. Field-level validation always runs through FluentValidation's asynchronous
+/// pipeline, which supports both synchronous and asynchronous rules (MustAsync, etc.). Form-level validation
+/// runs asynchronously when requested through <c>ValidateAsync</c>; otherwise, it runs synchronously. Use
+/// <see cref="EditContextExtensions.ValidateAsync(Microsoft.AspNetCore.Components.Forms.EditContext, IEnumerable{string}, CancellationToken)"/>
+/// to validate the form and wait for all asynchronous rules to complete.
+/// </para>
+/// <para>
+/// On .NET 11 and later, validation work is registered with the native asynchronous validation support
+/// of <see cref="Microsoft.AspNetCore.Components.Forms.EditContext"/>, so pending field validations are
+/// canceled when superseded and <c>EditForm</c> awaits validation before invoking submit callbacks.
 /// </para>
 /// </remarks>
 /// <example>
@@ -48,12 +57,25 @@ public class FluentValidator : ComponentBase, IDisposable
     /// <summary>
     /// The key used to store the pending validation task in the EditContext properties.
     /// </summary>
+    /// <remarks>
+    /// Only used on frameworks earlier than .NET 11. On .NET 11 and later, pending validation work is tracked
+    /// by the <see cref="Microsoft.AspNetCore.Components.Forms.EditContext"/> itself.
+    /// </remarks>
     public const string PendingTask = "__FluentValidation_Task";
 
     /// <summary>
     /// The key used to store the rule sets to apply in the EditContext properties.
     /// </summary>
     public const string RuleSetProperty = "__FluentValidation_RuleSet";
+
+    /// <summary>
+    /// The key used to indicate in the EditContext properties that validation was requested asynchronously.
+    /// </summary>
+    /// <remarks>
+    /// Only used on frameworks earlier than .NET 11. Set by ValidateAsync so form-level validation runs asynchronously.
+    /// </remarks>
+    public const string AsyncRequestProperty = "__FluentValidation_AsyncRequest";
+
 
     private static readonly ConcurrentDictionary<Type, Type> _validatorTypeCache = new();
     private static readonly ConcurrentDictionary<Type, Type> _validationContextTypeCache = new();
@@ -141,22 +163,20 @@ public class FluentValidator : ComponentBase, IDisposable
     [Parameter]
     public bool AllRules { get; set; }
 
+
     /// <summary>
-    /// Gets or sets a value indicating whether to use asynchronous validation mode. Default is <c>false</c>.
+    /// Gets or sets a value indicating whether to use asynchronous validation mode. This property is obsolete and ignored.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// When <c>true</c>, asynchronous validators will be executed directly using ValidateAsync()
-    /// for optimal performance. When <c>false</c>, synchronous validation
-    /// will be performed using Validate().
-    /// </para>
-    /// <para>
-    /// Async mode should be enabled when your validators contain async validation rules (MustAsync, etc.)
-    /// to ensure proper asynchronous execution.
-    /// </para>
+    /// Form-level validation runs asynchronously when requested through
+    /// <see cref="EditContextExtensions.ValidateAsync(Microsoft.AspNetCore.Components.Forms.EditContext, IEnumerable{string}, CancellationToken)"/>
+    /// and synchronously when requested through <c>EditContext.Validate()</c>. Field-level validation always runs
+    /// asynchronously. Remove this parameter.
     /// </remarks>
     [Parameter]
+    [Obsolete("AsyncMode is ignored and can be removed. Form validation runs asynchronously when requested through EditContext.ValidateAsync().")]
     public bool AsyncMode { get; set; }
+
 
     /// <summary>
     /// Initializes the component by setting up the validation context and subscribing to validation events.
@@ -213,14 +233,23 @@ public class FluentValidator : ComponentBase, IDisposable
             $"{GetType()} does not support changing the {nameof(EditContext)} dynamically.");
     }
 
+
     /// <summary>
     /// Handles field changed events from the EditContext and performs validation for the changed field.
     /// This method is called whenever a form field value changes.
     /// </summary>
     /// <param name="sender">The source of the event.</param>
     /// <param name="eventArgs">The event arguments containing the field identifier.</param>
+    /// <remarks>
+    /// On .NET 11 and later, the field validation is registered with the EditContext, which cancels any
+    /// previous pending validation for the same field. On earlier frameworks, the validation is awaited directly.
+    /// </remarks>
     [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "PathResolver.FindPath documents the public-property preservation requirement for nested field paths in trimmed apps.")]
+#if NET11_0_OR_GREATER
+    private void OnFieldChanged(object? sender, FieldChangedEventArgs eventArgs)
+#else
     private async void OnFieldChanged(object? sender, FieldChangedEventArgs eventArgs)
+#endif
     {
         if (_currentContext == null || _currentValidator == null)
             return;
@@ -236,19 +265,15 @@ public class FluentValidator : ComponentBase, IDisposable
         fieldName ??= fieldIdentifier.FieldName;
 
         // build context for the specific field
-        var context = BuildContext(fieldName);
-        if (context == null)
+        var validationContext = BuildContext(fieldName);
+        if (validationContext == null)
             return;
 
-        var validationResults = AsyncMode
-            ? await _currentValidator.ValidateAsync(context).ConfigureAwait(false)
-            : _currentValidator.Validate(context);
-
-        // update messages for the specific field
-        ApplyValidationResults(validationResults, fieldIdentifier);
-
-        // notify on UI thread
-        _ = InvokeAsync(_currentContext.NotifyValidationStateChanged);
+#if NET11_0_OR_GREATER
+        _currentContext.RegisterAsyncFieldValidator(fieldIdentifier, token => ValidateFormAsync(validationContext, fieldIdentifier, token));
+#else
+        await ValidateFormAsync(validationContext, fieldIdentifier, CancellationToken.None);
+#endif
     }
 
     /// <summary>
@@ -257,7 +282,22 @@ public class FluentValidator : ComponentBase, IDisposable
     /// </summary>
     /// <param name="sender">The source of the event.</param>
     /// <param name="eventArgs">The event arguments for the validation request.</param>
+    /// <remarks>
+    /// <para>
+    /// When validation is requested synchronously through <c>EditContext.Validate</c>, the model is validated synchronously.
+    /// </para>
+    /// <para>
+    /// Otherwise, on .NET 11 and later, the model validation is registered as an asynchronous validator on the
+    /// <paramref name="eventArgs"/> so it is awaited by <c>EditContext.ValidateAsync</c>. On earlier frameworks,
+    /// the validation task is stored in the EditContext properties under <see cref="PendingTask"/> so it can be
+    /// awaited by <see cref="EditContextExtensions"/>.
+    /// </para>
+    /// </remarks>
+#if NET11_0_OR_GREATER
+    private void OnValidationRequested(object? sender, ValidationRequestedEventArgs eventArgs)
+#else
     private async void OnValidationRequested(object? sender, ValidationRequestedEventArgs eventArgs)
+#endif
     {
         if (_currentContext == null || _currentValidator == null)
             return;
@@ -267,40 +307,112 @@ public class FluentValidator : ComponentBase, IDisposable
         if (context == null)
             return;
 
-        if (AsyncMode)
+        var asyncMode = GetAsyncMode(eventArgs);
+        if (!asyncMode)
         {
-            // wrap the entire validation workflow in a task to prevent race conditions
-            // the pending task must complete both validation AND applying results before
-            // EditContextExtensions.ValidateAsync() can safely check for validation messages
-            var task = _currentValidator
-                .ValidateAsync(context)
-                .ContinueWith(async validationTask =>
-                {
-                    ValidationResult? validationResults = await validationTask.ConfigureAwait(false);
-
-                    // update messages for all fields
-                    ApplyValidationResults(validationResults);
-                })
-                .Unwrap();
-
-            // store pending task in EditContext properties so it can be awaited if needed
-            // used in EditContextExtensions.ValidateAsync() to prevent premature form submission
-            _currentContext.Properties[PendingTask] = task;
-
-            // await the task so message store is updated when task completes
-            await task.ConfigureAwait(false);
-        }
-        else
-        {
-            ValidationResult? validationResults = _currentValidator.Validate(context);
-
-            // update messages for all fields
-            ApplyValidationResults(validationResults);
+            ValidateForm(context, fieldIdentifier: null);
+            return;
         }
 
-        // notify on UI thread
-        _ = InvokeAsync(_currentContext.NotifyValidationStateChanged);
+#if NET11_0_OR_GREATER
+        eventArgs.AddAsyncValidator(token => ValidateFormAsync(context, fieldIdentifier: null, token));
+#else
+        var task = ValidateFormAsync(context, fieldIdentifier: null, CancellationToken.None);
+
+        // store pending task in EditContext properties so it can be awaited if needed
+        // used in EditContextExtensions.ValidateAsync() to prevent premature form submission
+        _currentContext.Properties[PendingTask] = task;
+
+        // await the task so message store is updated when task completes
+        await task.ConfigureAwait(false);
+#endif
     }
+
+
+
+    /// <summary>
+    /// Runs the validator asynchronously and applies the results to the validation message store.
+    /// </summary>
+    /// <param name="validationContext">The validation context to validate.</param>
+    /// <param name="fieldIdentifier">
+    /// The field being validated, or <see langword="null"/> to validate the entire model.
+    /// When specified, existing messages for the field are cleared before validation starts.
+    /// </param>
+    /// <param name="cancellationToken">A token that cancels validation when it is superseded or no longer needed.</param>
+    /// <returns>A <see cref="Task"/> that completes when validation results have been applied.</returns>
+    /// <remarks>
+    /// If validation is canceled, no results are applied.
+    /// </remarks>
+    private async Task ValidateFormAsync(
+        IValidationContext validationContext,
+        FieldIdentifier? fieldIdentifier = default,
+        CancellationToken cancellationToken = default)
+    {
+        if (_currentContext == null || _currentValidator == null)
+            return;
+
+        // Clear stale messages so the field shows neutral state
+        if (fieldIdentifier.HasValue)
+            _messages?.Clear(fieldIdentifier.Value);
+
+        ValidationResult? result;
+
+        try
+        {
+            result = await _currentValidator.ValidateAsync(validationContext, cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Cancelled (field re-edited or form submitting); the superseding RegisterAsyncFieldValidator
+            // call already notified with the cleared messages.
+            return;
+        }
+
+        ApplyValidationResults(result, fieldIdentifier);
+
+        _currentContext.NotifyValidationStateChanged();
+    }
+
+    /// <summary>
+    /// Runs the validator synchronously and applies the results to the validation message store.
+    /// </summary>
+    /// <param name="validationContext">The validation context to validate.</param>
+    /// <param name="fieldIdentifier">
+    /// The field being validated, or <see langword="null"/> to validate the entire model.
+    /// When specified, existing messages for the field are cleared before validation starts.
+    /// </param>
+    /// <remarks>
+    /// If validation is canceled, no results are applied.
+    /// </remarks>
+    private void ValidateForm(
+        IValidationContext validationContext,
+        FieldIdentifier? fieldIdentifier = default)
+    {
+        if (_currentContext == null || _currentValidator == null)
+            return;
+
+        // Clear stale messages so the field shows neutral state
+        if (fieldIdentifier.HasValue)
+            _messages?.Clear(fieldIdentifier.Value);
+
+        ValidationResult? result;
+
+        try
+        {
+            result = _currentValidator.Validate(validationContext);
+        }
+        catch (OperationCanceledException)
+        {
+            // Cancelled (field re-edited or form submitting); the superseding RegisterAsyncFieldValidator
+            // call already notified with the cleared messages.
+            return;
+        }
+
+        ApplyValidationResults(result, fieldIdentifier);
+
+        _currentContext.NotifyValidationStateChanged();
+    }
+
 
     /// <summary>
     /// Builds a validation context for the specified field or the entire model.
@@ -436,6 +548,24 @@ public class FluentValidator : ComponentBase, IDisposable
     }
 
     /// <summary>
+    /// Determines whether the requested form-level validation should run asynchronously.
+    /// </summary>
+    /// <param name="eventArgs">The event arguments for the validation request.</param>
+    /// <returns>
+    /// <see langword="true"/> if validation was requested through <c>ValidateAsync</c>; otherwise, <see langword="false"/>.
+    /// </returns>
+    private bool GetAsyncMode(ValidationRequestedEventArgs eventArgs)
+    {
+#if NET11_0_OR_GREATER
+        return ValidationRequestedEventArgsAccessor.GetAsyncMode(eventArgs);
+#else
+        return _currentContext?.Properties.TryGetValue(AsyncRequestProperty, out var asyncRequest) == true
+            && asyncRequest is true;
+#endif
+    }
+
+
+    /// <summary>
     /// Performs cleanup when the component is being disposed.
     /// This method can be overridden by derived classes to provide additional cleanup logic.
     /// </summary>
@@ -467,6 +597,7 @@ public class FluentValidator : ComponentBase, IDisposable
         GC.SuppressFinalize(this);
     }
 
+
     /// <summary>
     /// Resolves the appropriate <see cref="IValidator"/> for the given model type from the service provider.
     /// </summary>
@@ -495,4 +626,22 @@ public class FluentValidator : ComponentBase, IDisposable
         var contextType = _validationContextTypeCache.GetOrAdd(model.GetType(), static t => typeof(ValidationContext<>).MakeGenericType(t));
         return (IValidationContext)Activator.CreateInstance(contextType, model, propertyChain, selector)!;
     }
+
+#if NET11_0_OR_GREATER
+    /// <summary>
+    /// Provides access to non-public members of <see cref="ValidationRequestedEventArgs"/>.
+    /// </summary>
+    internal static class ValidationRequestedEventArgsAccessor
+    {
+        /// <summary>
+        /// Gets a value indicating whether validation was requested asynchronously through <c>EditContext.ValidateAsync</c>.
+        /// </summary>
+        /// <param name="eventArgs">The event arguments for the validation request.</param>
+        /// <returns><see langword="true"/> if validation was requested asynchronously; otherwise, <see langword="false"/>.</returns>
+        [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "get_IsAsync")]
+        public static extern bool GetAsyncMode(ValidationRequestedEventArgs eventArgs);
+    }
+#endif
 }
+
+
